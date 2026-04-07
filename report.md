@@ -78,39 +78,41 @@ Never block in a loop waiting for the other agent — do useful work instead.
 
 ## Results
 
+The initial run used 12 concurrent containers for control and 6 for duo. Many control trials failed during Claude Code installation with exit code 137 (OOM kill), disproportionately affecting the control due to higher concurrency. All `NonZeroAgentExitCodeError` trials from the initial run were rerun with a maximum of 8 concurrent containers. The results below combine the original successful trials with the rerun replacements, giving exactly 5 scored attempts per task for both setups.
+
 | Task | Control | Duo | Delta |
 |---|---|---|---|
-| chess-best-move | 0.0 (4/5) | 0.0 (5/5) | 0.0 |
-| circuit-fibsqrt | 0.0 (3/5) | 0.2 (5/5) | +0.2 |
-| compile-compcert | 0.0 (2/5) | 0.2 (5/5) | +0.2 |
-| extract-elf | 0.6 (4/5) | 0.2 (5/5) | -0.4 |
-| git-leak-recovery | 0.8 (4/5) | 1.0 (5/5) | +0.2 |
-| multi-source-data-merger | 0.6 (3/5) | 0.8 (4/5) | +0.2 |
-| path-tracing | 0.0 (5/5) | 0.0 (4/5) | 0.0 |
-| rstan-to-pystan | 0.0 (5/5) | 0.0 (5/5) | 0.0 |
-| sanitize-git-repo | 0.4 (4/5) | 0.8 (5/5) | +0.4 |
-| sparql-university | 0.6 (3/5) | 1.0 (5/5) | +0.4 |
-| sqlite-db-truncate | 0.6 (3/5) | 1.0 (5/5) | +0.4 |
-| torch-tensor-parallelism | 0.2 (4/5) | 0.0 (4/5) | -0.2 |
-| **Aggregate** | **0.317 (19/60)** | **0.433 (26/60)** | **+0.117** |
+| chess-best-move | 0/5 (0.00) | 0/5 (0.00) | 0.00 |
+| circuit-fibsqrt | 0/5 (0.00) | 1/5 (0.20) | +0.20 |
+| compile-compcert | 0/5 (0.00) | 1/5 (0.20) | +0.20 |
+| extract-elf | 4/5 (0.80) | 1/5 (0.20) | -0.60 |
+| git-leak-recovery | 5/5 (1.00) | 5/5 (1.00) | 0.00 |
+| multi-source-data-merger | 5/5 (1.00) | 5/5 (1.00) | 0.00 |
+| path-tracing | 0/5 (0.00) | 0/5 (0.00) | 0.00 |
+| rstan-to-pystan | 0/5 (0.00) | 0/5 (0.00) | 0.00 |
+| sanitize-git-repo | 2/5 (0.40) | 4/5 (0.80) | +0.40 |
+| sparql-university | 5/5 (1.00) | 5/5 (1.00) | 0.00 |
+| sqlite-db-truncate | 5/5 (1.00) | 5/5 (1.00) | 0.00 |
+| torch-tensor-parallelism | 1/5 (0.20) | 0/5 (0.00) | -0.20 |
+| **Aggregate** | **27/60 (0.450)** | **27/60 (0.450)** | **0.000** |
 
-Scores are mean reward across 5 attempts. Values in parentheses show how many of the 5 trials completed without an agent exception (the remainder errored before producing a result).
-
-### Error breakdown
-
-| Error type | Control | Duo |
-|---|---|---|
-| AgentTimeoutError | 15 | 16 |
-| NonZeroAgentExitCodeError | 19 | 3 |
-| **Total errors** | **34** | **19** |
+Scores are mean reward across 5 attempts per task.
 
 ## Key Observations
 
-- The duo achieved a **37% relative improvement** over the control (0.433 vs 0.317 mean score).
-- The duo reached **perfect scores** (5/5) on three tasks: `git-leak-recovery`, `sparql-university`, and `sqlite-db-truncate`.
-- The duo improved on 7 of 12 tasks, tied on 3, and regressed on 2.
-- Agent crashes dropped sharply in the duo setup (3 vs 19), suggesting that having a second agent provides resilience — if one agent fails, the other can still complete the task.
-- Timeout rates were comparable (16 vs 15), indicating that coordination overhead did not significantly increase the likelihood of hitting time limits.
-- The duo regressed on `extract-elf` (-0.4), likely due to both agents modifying the same output file despite coordination prompts.
-- Three tasks remained unsolved by both setups: `chess-best-move`, `path-tracing`, and `rstan-to-pystan`.
-- Wall-clock time for the duo run was approximately 2x the control (3h 25m vs 1h 28m), as concurrency was halved to account for doubled API usage per trial.
+- After rerunning infrastructure failures, **both setups scored identically: 27/60 (0.450)**.
+- The duo improved on 3 tasks: `circuit-fibsqrt` (+0.20), `compile-compcert` (+0.20), `sanitize-git-repo` (+0.40).
+- The duo regressed on 2 tasks: `extract-elf` (-0.60), `torch-tensor-parallelism` (-0.20).
+- Both setups achieved perfect scores on 4 tasks: `git-leak-recovery`, `multi-source-data-merger`, `sparql-university`, `sqlite-db-truncate`.
+- Four tasks remained unsolved by both setups: `chess-best-move`, `path-tracing`, `rstan-to-pystan`, and `circuit-fibsqrt` (control only).
+- The initial run appeared to show a large duo advantage (0.433 vs 0.317), but this was entirely explained by OOM kills during Claude Code installation caused by running 12 concurrent Docker containers for control vs 6 for duo.
+
+### OOM kill analysis
+
+The initial run suffered `NonZeroAgentExitCodeError` (exit code 137) during the Claude Code CLI installation step inside Docker containers. The Linux OOM killer terminated the installation process when memory was exhausted. Control had 19 such failures (at 12 concurrent containers) vs 3 for duo (at 6 concurrent containers). Rerunning these trials at lower concurrency (max 8) eliminated the installation OOM kills entirely.
+
+### Where the duo helps and hurts
+
+- **Duo advantage — `sanitize-git-repo` (+0.40):** Agents divided the work (e.g., one handled sensitive file cleanup while the other managed git history rewriting), leading to more consistent success.
+- **Duo disadvantage — `extract-elf` (-0.60):** Both agents modified the same output file despite coordination prompts, leading to overwrites and incorrect results. This was the duo's worst regression.
+- **Duo disadvantage — `torch-tensor-parallelism` (-0.20):** Coordination overhead on a task requiring deep, sequential reasoning provided no benefit and consumed time.

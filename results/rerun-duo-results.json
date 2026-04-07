@@ -1,0 +1,93 @@
+[
+  {
+    "id": "b0ec62e8-9ac2-4daf-b509-3c6a76163bdd",
+    "started_at": "2026-04-07T12:17:47.507692",
+    "finished_at": "2026-04-07T12:21:07.019617",
+    "n_total_trials": 1,
+    "stats": {
+      "n_trials": 1,
+      "n_errors": 0,
+      "evals": {
+        "claude-code-duo__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 1,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 1.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "1.0": [
+                "multi-source-data-merger__mfb8N7x"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      }
+    }
+  },
+  {
+    "id": "fd2d1a40-9785-4475-970b-d6da78ca46c3",
+    "started_at": "2026-04-07T12:21:10.244237",
+    "finished_at": "2026-04-07T12:52:20.130230",
+    "n_total_trials": 1,
+    "stats": {
+      "n_trials": 1,
+      "n_errors": 1,
+      "evals": {
+        "claude-code-duo__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 1,
+          "n_errors": 1,
+          "metrics": [
+            {
+              "mean": 0.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "0.0": [
+                "path-tracing__vQEC5Ur"
+              ]
+            }
+          },
+          "exception_stats": {
+            "AgentTimeoutError": [
+              "path-tracing__vQEC5Ur"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "f95db062-9a29-4170-b940-6635df09ed85",
+    "started_at": "2026-04-07T12:52:23.690905",
+    "finished_at": "2026-04-07T13:00:41.674697",
+    "n_total_trials": 1,
+    "stats": {
+      "n_trials": 1,
+      "n_errors": 0,
+      "evals": {
+        "claude-code-duo__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 1,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 0.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "0.0": [
+                "torch-tensor-parallelism__4MZvVFA"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      }
+    }
+  }
+]

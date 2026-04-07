@@ -1,0 +1,315 @@
+[
+  {
+    "id": "68f5ec6f-427f-4a16-85f1-af961ca5845e",
+    "started_at": "2026-04-07T12:17:47.361768",
+    "finished_at": "2026-04-07T12:30:52.962407",
+    "n_total_trials": 1,
+    "stats": {
+      "n_trials": 1,
+      "n_errors": 0,
+      "evals": {
+        "claude-code-control__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 1,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 0.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "0.0": [
+                "chess-best-move__Pgou5cB"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      }
+    }
+  },
+  {
+    "id": "5fd7d614-282c-439c-ac8e-0c691dc37d03",
+    "started_at": "2026-04-07T12:30:56.106643",
+    "finished_at": "2026-04-07T13:08:25.957905",
+    "n_total_trials": 5,
+    "stats": {
+      "n_trials": 5,
+      "n_errors": 5,
+      "evals": {
+        "claude-code-control__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 5,
+          "n_errors": 5,
+          "metrics": [
+            {
+              "mean": 0.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "0.0": [
+                "circuit-fibsqrt__3cxW4wE",
+                "circuit-fibsqrt__Vi2TyAX",
+                "circuit-fibsqrt__nymaoRy",
+                "circuit-fibsqrt__cwauapZ",
+                "circuit-fibsqrt__zawPJz3"
+              ]
+            }
+          },
+          "exception_stats": {
+            "NonZeroAgentExitCodeError": [
+              "circuit-fibsqrt__3cxW4wE",
+              "circuit-fibsqrt__Vi2TyAX",
+              "circuit-fibsqrt__nymaoRy",
+              "circuit-fibsqrt__cwauapZ",
+              "circuit-fibsqrt__zawPJz3"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "eb25df94-632a-4abc-9356-e77b2ce5a8ef",
+    "started_at": "2026-04-07T13:08:29.424608",
+    "finished_at": "2026-04-07T13:52:21.559409",
+    "n_total_trials": 3,
+    "stats": {
+      "n_trials": 3,
+      "n_errors": 3,
+      "evals": {
+        "claude-code-control__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 3,
+          "n_errors": 3,
+          "metrics": [
+            {
+              "mean": 0.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "0.0": [
+                "compile-compcert__MJtCLPB",
+                "compile-compcert__67AxbkG",
+                "compile-compcert__YBCEmPj"
+              ]
+            }
+          },
+          "exception_stats": {
+            "AgentTimeoutError": [
+              "compile-compcert__MJtCLPB",
+              "compile-compcert__67AxbkG",
+              "compile-compcert__YBCEmPj"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "33bd6a94-0a32-4756-84c0-aca625715664",
+    "started_at": "2026-04-07T13:52:25.233929",
+    "finished_at": "2026-04-07T13:59:17.654532",
+    "n_total_trials": 1,
+    "stats": {
+      "n_trials": 1,
+      "n_errors": 0,
+      "evals": {
+        "claude-code-control__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 1,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 1.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "1.0": [
+                "extract-elf__Kcj7KKE"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      }
+    }
+  },
+  {
+    "id": "5610ee80-42cb-4a19-817e-69bdc5e8702c",
+    "started_at": "2026-04-07T13:59:20.812359",
+    "finished_at": "2026-04-07T14:00:56.423421",
+    "n_total_trials": 1,
+    "stats": {
+      "n_trials": 1,
+      "n_errors": 0,
+      "evals": {
+        "claude-code-control__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 1,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 1.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "1.0": [
+                "git-leak-recovery__r9yUM5V"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      }
+    }
+  },
+  {
+    "id": "109f583f-228a-4aec-8fbb-40c9bd501394",
+    "started_at": "2026-04-07T14:00:59.486892",
+    "finished_at": "2026-04-07T14:03:05.969108",
+    "n_total_trials": 2,
+    "stats": {
+      "n_trials": 2,
+      "n_errors": 0,
+      "evals": {
+        "claude-code-control__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 2,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 1.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "1.0": [
+                "multi-source-data-merger__mZ7KY9n",
+                "multi-source-data-merger__n26HFsB"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      }
+    }
+  },
+  {
+    "id": "f072d3b8-8ff0-47cd-96b4-fb037f283bc6",
+    "started_at": "2026-04-07T14:03:09.064993",
+    "finished_at": "2026-04-07T14:05:38.602199",
+    "n_total_trials": 1,
+    "stats": {
+      "n_trials": 1,
+      "n_errors": 0,
+      "evals": {
+        "claude-code-control__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 1,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 0.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "0.0": [
+                "sanitize-git-repo__M9MCBsw"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      }
+    }
+  },
+  {
+    "id": "9577dba8-5e5b-44c2-9e5a-36056105ccf5",
+    "started_at": "2026-04-07T14:05:42.265696",
+    "finished_at": "2026-04-07T14:09:31.899593",
+    "n_total_trials": 2,
+    "stats": {
+      "n_trials": 2,
+      "n_errors": 0,
+      "evals": {
+        "claude-code-control__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 2,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 1.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "1.0": [
+                "sparql-university__kiU43wR",
+                "sparql-university__QgtvsB5"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      }
+    }
+  },
+  {
+    "id": "132cee4e-c208-422a-8f71-c58697ea2824",
+    "started_at": "2026-04-07T14:09:35.179794",
+    "finished_at": "2026-04-07T14:12:43.183934",
+    "n_total_trials": 2,
+    "stats": {
+      "n_trials": 2,
+      "n_errors": 0,
+      "evals": {
+        "claude-code-control__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 2,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 1.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "1.0": [
+                "sqlite-db-truncate__VnTp2fc",
+                "sqlite-db-truncate__xHsZoeJ"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      }
+    }
+  },
+  {
+    "id": "897f9be7-5aa0-4651-aa1f-7f7698b24478",
+    "started_at": "2026-04-07T14:12:46.374849",
+    "finished_at": "2026-04-07T14:18:41.056014",
+    "n_total_trials": 1,
+    "stats": {
+      "n_trials": 1,
+      "n_errors": 0,
+      "evals": {
+        "claude-code-control__claude-sonnet-4-6__terminal-bench": {
+          "n_trials": 1,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 0.0
+            }
+          ],
+          "reward_stats": {
+            "reward": {
+              "0.0": [
+                "torch-tensor-parallelism__xEb65Jt"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      }
+    }
+  }
+]
