@@ -1,0 +1,113 @@
+{
+    "id": "689d7885-2ce4-49d2-b640-cfc0ea2c913d",
+    "started_at": "2026-04-07T04:39:50.613563",
+    "finished_at": "2026-04-07T06:07:33.961293",
+    "n_total_trials": 60,
+    "stats": {
+        "n_trials": 60,
+        "n_errors": 34,
+        "evals": {
+            "claude-code-control__claude-sonnet-4-6__terminal-bench": {
+                "n_trials": 44,
+                "n_errors": 34,
+                "metrics": [
+                    {
+                        "mean": 0.31666666666666665
+                    }
+                ],
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "torch-tensor-parallelism__MfamNka",
+                            "path-tracing__WHFTLwV",
+                            "chess-best-move__SGNfmRc",
+                            "compile-compcert__NUfTjQa",
+                            "circuit-fibsqrt__YUgSvR6",
+                            "sanitize-git-repo__N6q4uLV",
+                            "rstan-to-pystan__zLPbWRu",
+                            "torch-tensor-parallelism__XCdRFax",
+                            "path-tracing__WzXPuph",
+                            "chess-best-move__PTAugC4",
+                            "compile-compcert__JbSadL6",
+                            "circuit-fibsqrt__zQMUVk4",
+                            "rstan-to-pystan__EDFpZ2c",
+                            "path-tracing__3U6uBTk",
+                            "chess-best-move__quiH5L7",
+                            "sanitize-git-repo__aTT2z8D",
+                            "rstan-to-pystan__WJBhpNn",
+                            "torch-tensor-parallelism__fag2Sqn",
+                            "path-tracing__TotqfLr",
+                            "rstan-to-pystan__2ur8QEV",
+                            "path-tracing__MeUyR2S",
+                            "chess-best-move__GFHjw33",
+                            "circuit-fibsqrt__pfr5UPX",
+                            "extract-elf__vRptdK5",
+                            "rstan-to-pystan__s6SaA6j"
+                        ],
+                        "1.0": [
+                            "multi-source-data-merger__RFPn7zm",
+                            "extract-elf__SjaeCqR",
+                            "git-leak-recovery__7gpaUUk",
+                            "sparql-university__q8DFve9",
+                            "sqlite-db-truncate__LTUttm2",
+                            "multi-source-data-merger__sFJMogy",
+                            "extract-elf__TnRCB4K",
+                            "git-leak-recovery__43UXzig",
+                            "torch-tensor-parallelism__BB9hXkK",
+                            "multi-source-data-merger__vzdFqML",
+                            "git-leak-recovery__xYcvXty",
+                            "sparql-university__aZXwbR2",
+                            "extract-elf__bWGo73V",
+                            "sqlite-db-truncate__agVFYVE",
+                            "sanitize-git-repo__X7jhNgm",
+                            "git-leak-recovery__M7bpGir",
+                            "sparql-university__mqhWJwL",
+                            "sqlite-db-truncate__xj7CKv3",
+                            "sanitize-git-repo__CwCmdLY"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "AgentTimeoutError": [
+                        "path-tracing__WHFTLwV",
+                        "compile-compcert__NUfTjQa",
+                        "rstan-to-pystan__zLPbWRu",
+                        "path-tracing__WzXPuph",
+                        "chess-best-move__PTAugC4",
+                        "compile-compcert__JbSadL6",
+                        "rstan-to-pystan__EDFpZ2c",
+                        "path-tracing__3U6uBTk",
+                        "chess-best-move__quiH5L7",
+                        "rstan-to-pystan__WJBhpNn",
+                        "path-tracing__TotqfLr",
+                        "rstan-to-pystan__2ur8QEV",
+                        "path-tracing__MeUyR2S",
+                        "chess-best-move__GFHjw33",
+                        "rstan-to-pystan__s6SaA6j"
+                    ],
+                    "NonZeroAgentExitCodeError": [
+                        "circuit-fibsqrt__YUgSvR6",
+                        "circuit-fibsqrt__zQMUVk4",
+                        "sparql-university__HCwFqP4",
+                        "sqlite-db-truncate__q4PTLat",
+                        "sanitize-git-repo__ZuhdfbG",
+                        "compile-compcert__fscSxut",
+                        "circuit-fibsqrt__22MgNx5",
+                        "extract-elf__XTPvW9v",
+                        "sqlite-db-truncate__3ySqEWF",
+                        "multi-source-data-merger__m4AiaRF",
+                        "chess-best-move__ra8JLiz",
+                        "compile-compcert__YU9D6oy",
+                        "circuit-fibsqrt__osknBGe",
+                        "git-leak-recovery__feYTVck",
+                        "sparql-university__Fhnqxyb",
+                        "torch-tensor-parallelism__jh8Rkt8",
+                        "multi-source-data-merger__Skt3a9K",
+                        "compile-compcert__UdpQBbt",
+                        "circuit-fibsqrt__pfr5UPX"
+                    ]
+                }
+            }
+        }
+    }
+}
