@@ -1,0 +1,112 @@
+{
+    "id": "b5916f93-b972-4a7f-8854-c709a0cc0340",
+    "started_at": "2026-04-08T11:45:46.899549",
+    "finished_at": "2026-04-08T16:30:33.880740",
+    "n_total_trials": 60,
+    "stats": {
+        "n_trials": 60,
+        "n_errors": 19,
+        "evals": {
+            "claude-code-trio__claude-sonnet-4-6__terminal-bench": {
+                "n_trials": 60,
+                "n_errors": 19,
+                "metrics": [
+                    {
+                        "mean": 0.6
+                    }
+                ],
+                "reward_stats": {
+                    "reward": {
+                        "1.0": [
+                            "torch-tensor-parallelism__9QbxJA4",
+                            "multi-source-data-merger__niiW9Px",
+                            "compile-compcert__ERyDaq7",
+                            "git-leak-recovery__afLKZ9a",
+                            "sqlite-db-truncate__zdjBdgd",
+                            "sanitize-git-repo__LFKunkH",
+                            "rstan-to-pystan__TTAwxdZ",
+                            "multi-source-data-merger__a4JyqmQ",
+                            "compile-compcert__VRiq9vW",
+                            "git-leak-recovery__K6Ej9Lq",
+                            "sparql-university__U34ERod",
+                            "sqlite-db-truncate__9LjqhN6",
+                            "sanitize-git-repo__RBnpAVG",
+                            "rstan-to-pystan__g3rqNQh",
+                            "torch-tensor-parallelism__A56wSis",
+                            "multi-source-data-merger__59bhrG8",
+                            "git-leak-recovery__Gg97KC6",
+                            "sparql-university__QanLYta",
+                            "sqlite-db-truncate__mTfAYY9",
+                            "sanitize-git-repo__BFQoLWx",
+                            "rstan-to-pystan__ButFs9e",
+                            "torch-tensor-parallelism__yDq2X5y",
+                            "multi-source-data-merger__47M42cw",
+                            "compile-compcert__cX7LM7G",
+                            "git-leak-recovery__ruyhWav",
+                            "sparql-university__SqmxFyT",
+                            "sqlite-db-truncate__6JEV5At",
+                            "sanitize-git-repo__DKtMLp2",
+                            "rstan-to-pystan__FYxkNYz",
+                            "torch-tensor-parallelism__FHrQgno",
+                            "multi-source-data-merger__L8Zwmty",
+                            "git-leak-recovery__wmPD8kw",
+                            "sparql-university__2EdMx4s",
+                            "sqlite-db-truncate__kneMqC8",
+                            "sanitize-git-repo__S4U3Cj7",
+                            "rstan-to-pystan__ZLub5Bj"
+                        ],
+                        "0.0": [
+                            "path-tracing__9wAb2gH",
+                            "chess-best-move__akgvYF8",
+                            "circuit-fibsqrt__iVydaNE",
+                            "extract-elf__xs2VSEb",
+                            "sparql-university__aavLDMQ",
+                            "torch-tensor-parallelism__kbz8Vxo",
+                            "path-tracing__zQuE87x",
+                            "chess-best-move__vHz6xSw",
+                            "circuit-fibsqrt__UKf9W5w",
+                            "extract-elf__n6JuWFL",
+                            "path-tracing__j9v4xqF",
+                            "chess-best-move__izp4T87",
+                            "compile-compcert__syWAUbh",
+                            "circuit-fibsqrt__eSgD8ei",
+                            "extract-elf__T3ErjZm",
+                            "path-tracing__8Tq7Ceo",
+                            "chess-best-move__FHc5AGU",
+                            "circuit-fibsqrt__sYHw8h2",
+                            "extract-elf__99CHWFa",
+                            "path-tracing__CmpNhyL",
+                            "chess-best-move__p9UK3mv",
+                            "compile-compcert__skrgw52",
+                            "circuit-fibsqrt__SKLiGp8",
+                            "extract-elf__YBFJJhH"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "AgentTimeoutError": [
+                        "path-tracing__9wAb2gH",
+                        "chess-best-move__akgvYF8",
+                        "circuit-fibsqrt__iVydaNE",
+                        "path-tracing__zQuE87x",
+                        "chess-best-move__vHz6xSw",
+                        "path-tracing__j9v4xqF",
+                        "chess-best-move__izp4T87",
+                        "compile-compcert__syWAUbh",
+                        "circuit-fibsqrt__eSgD8ei",
+                        "rstan-to-pystan__ButFs9e",
+                        "path-tracing__8Tq7Ceo",
+                        "chess-best-move__FHc5AGU",
+                        "compile-compcert__cX7LM7G",
+                        "circuit-fibsqrt__sYHw8h2",
+                        "rstan-to-pystan__FYxkNYz",
+                        "torch-tensor-parallelism__FHrQgno",
+                        "path-tracing__CmpNhyL",
+                        "chess-best-move__p9UK3mv",
+                        "compile-compcert__skrgw52"
+                    ]
+                }
+            }
+        }
+    }
+}

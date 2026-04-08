@@ -33,26 +33,31 @@ COLLAB_PROMPT_A = textwrap.dedent("""\
     2. Post a proposed plan to the log file. In your plan:
        - List which output files need to be created or modified.
        - If there are multiple files or areas of work, propose a three-way split \
-    (A does X, B does Y, C does Z).
-       - If the task produces only ONE output file, propose that one agent writes it \
-    and the other two review, test, and debug. This is critical — if multiple agents \
-    write the same file, they will silently overwrite each other's work.
+    (A does X, B does Y, C does Z). Each file must have EXACTLY ONE writer.
+       - If the task produces only ONE output file, propose that you write it. \
+    B should independently analyze the problem and post findings/test cases to the \
+    log. C should write a verification script to test the output. This is critical — \
+    if multiple agents write the same file, they will silently overwrite each other.
        - If there are exactly two output files, assign one writer per file and the \
-    third agent reviews/tests both.
+    third agent writes tests for both.
        - End with PLAN_READY.
     3. Wait briefly for B and C to respond (poll with: \
-    for i in $(seq 1 20); do \
-    grep -q '\\[B|' {collab_file} 2>/dev/null && grep -q '\\[C|' {collab_file} 2>/dev/null && break; \
-    sleep 2; done; cat {collab_file}). If no response after ~40s, start working anyway.
+    for i in $(seq 1 15); do \
+    grep -q '\\[B|' {collab_file} 2>/dev/null && break; \
+    sleep 2; done; cat {collab_file}). Start working after ~30s regardless.
     4. Once you've agreed on the division, start your part.
 
-    AVOIDING FILE CONFLICTS: Before creating or modifying any file, announce it in the \
-    log (e.g. "CLAIMING: extract.js"). If another agent already claimed that file, do \
-    NOT write to it — help by reviewing their work, writing tests, or debugging instead. \
-    Multiple agents writing the same file is the #1 cause of failure.
+    STRICT FILE OWNERSHIP: Before creating or modifying any file, announce it in the \
+    log (e.g. "CLAIMING: extract.js"). Once claimed, that file belongs ONLY to the \
+    claiming agent. No other agent may write to it under any circumstances. If you \
+    want changes to another agent's file, post a specific patch or suggestion to the \
+    log and let the owner apply it. Violating file ownership is the #1 cause of failure.
 
     STATUS UPDATES: Post brief progress updates to {collab_file} every few minutes so \
     the other agents know you're alive and working.
+
+    BE EFFICIENT: Time is limited. Don't over-analyze — start implementing promptly \
+    after posting the plan. Read the log for insights from B and C while you work.
 
     Throughout the task, check {collab_file} regularly for messages from B and C. Stick \
     to the agreed division. Discuss before completing. Never block in a loop waiting — \
@@ -69,18 +74,19 @@ COLLAB_PROMPT_B = textwrap.dedent("""\
 
     Agent A goes first. Before doing any real work:
     1. Wait for Agent A's plan: \
-    for i in $(seq 1 20); do grep -q 'PLAN_READY' {collab_file} 2>/dev/null && break; \
+    for i in $(seq 1 15); do grep -q 'PLAN_READY' {collab_file} 2>/dev/null && break; \
     sleep 3; done
     2. Read the plan: cat {collab_file}
-    3. If no plan appeared after ~60s, start working on the task independently.
+    3. If no plan appeared after ~45s, start working on the task independently.
     4. Otherwise, reply with your thoughts and confirm the division of work. If there \
-    is only one output file, agree on who writes it — the other two should review, \
-    test, and debug rather than writing competing versions.
+    is only one output file, agree on who writes it. Your role is then to independently \
+    analyze the problem and post useful findings, edge cases, and test cases to the log \
+    so the writer can use them. Do NOT write competing versions of the same file.
 
-    AVOIDING FILE CONFLICTS: Before creating or modifying any file, check {collab_file} \
-    to see if another agent already claimed it. If so, do NOT write to it — help by \
-    reviewing their work, writing tests, or debugging instead. Multiple agents writing \
-    the same file is the #1 cause of failure.
+    STRICT FILE OWNERSHIP: Once a file is CLAIMED by an agent, no other agent may write \
+    to it. Period. If you find a bug in another agent's file, post a specific fix to \
+    {collab_file} (e.g. "BUG in extract.js line 42: should use memsz not filesz") and \
+    let the owner apply it. Never edit another agent's file directly.
 
     PATIENCE: Your internal sense of elapsed time is unreliable. Before deciding another \
     agent is inactive, you MUST run: cat {collab_file} and check the actual timestamps. \
@@ -88,10 +94,12 @@ COLLAB_PROMPT_B = textwrap.dedent("""\
     (a) They explicitly ask for help, OR
     (b) Their last message timestamp is more than 5 minutes ago AND you have re-read \
     the log just now to confirm this.
-    If they are still working, do NOT write their files — instead help by analyzing \
-    the problem, investigating edge cases, preparing tests, or posting useful insights \
-    to the log. If you get impatient, write a status message to the log asking for an \
-    update instead of taking over their work.
+    If they are still working, do NOT write their files — instead post analysis and \
+    test results to the log. If you get impatient, write a status message to the log \
+    asking for an update instead of taking over their work.
+
+    BE EFFICIENT: Start your assigned work immediately after confirming the plan. \
+    Don't duplicate analysis that A or C are already doing.
 
     Throughout the task, check {collab_file} regularly for messages from A and C. Post \
     brief status updates. Stick to the agreed division. Discuss before completing. Never \
@@ -108,18 +116,19 @@ COLLAB_PROMPT_C = textwrap.dedent("""\
 
     Agent A goes first. Before doing any real work:
     1. Wait for Agent A's plan: \
-    for i in $(seq 1 20); do grep -q 'PLAN_READY' {collab_file} 2>/dev/null && break; \
+    for i in $(seq 1 15); do grep -q 'PLAN_READY' {collab_file} 2>/dev/null && break; \
     sleep 3; done
     2. Read the plan: cat {collab_file}
-    3. If no plan appeared after ~60s, start working on the task independently.
+    3. If no plan appeared after ~45s, start working on the task independently.
     4. Otherwise, reply with your thoughts and confirm the division of work. If there \
-    is only one output file, agree on who writes it — the other two should review, \
-    test, and debug rather than writing competing versions.
+    is only one output file, agree on who writes it. Your role is then to write a \
+    verification/test script that checks the output file against the task requirements. \
+    Run your tests and post results to the log so the writer can fix any issues.
 
-    AVOIDING FILE CONFLICTS: Before creating or modifying any file, check {collab_file} \
-    to see if another agent already claimed it. If so, do NOT write to it — help by \
-    reviewing their work, writing tests, or debugging instead. Multiple agents writing \
-    the same file is the #1 cause of failure.
+    STRICT FILE OWNERSHIP: Once a file is CLAIMED by an agent, no other agent may write \
+    to it. Period. If you find a bug in another agent's file, post a specific fix to \
+    {collab_file} (e.g. "BUG in extract.js line 42: should use memsz not filesz") and \
+    let the owner apply it. Never edit another agent's file directly.
 
     PATIENCE: Your internal sense of elapsed time is unreliable. Before deciding another \
     agent is inactive, you MUST run: cat {collab_file} and check the actual timestamps. \
@@ -127,10 +136,12 @@ COLLAB_PROMPT_C = textwrap.dedent("""\
     (a) They explicitly ask for help, OR
     (b) Their last message timestamp is more than 5 minutes ago AND you have re-read \
     the log just now to confirm this.
-    If they are still working, do NOT write their files — instead help by analyzing \
-    the problem, investigating edge cases, preparing tests, or posting useful insights \
-    to the log. If you get impatient, write a status message to the log asking for an \
-    update instead of taking over their work.
+    If they are still working, do NOT write their files — instead post test results \
+    and findings to the log. If you get impatient, write a status message to the log \
+    asking for an update instead of taking over their work.
+
+    BE EFFICIENT: Start your assigned work immediately after confirming the plan. \
+    Focus on testing and validation — don't duplicate analysis that A or B are doing.
 
     Throughout the task, check {collab_file} regularly for messages from A and B. Post \
     brief status updates. Stick to the agreed division. Discuss before completing. Never \
