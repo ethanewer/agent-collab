@@ -29,18 +29,30 @@ COLLAB_PROMPT_A = textwrap.dedent("""\
 
     You go first. Before doing any real work:
     1. Analyze the task briefly.
-    2. Post a proposed plan and division of work to the log file. Suggest what each agent \
-    should handle. End with PLAN_READY.
+    2. Post a proposed plan to the log file. In your plan:
+       - List which output files need to be created or modified.
+       - If there are multiple output files or areas, propose who handles which.
+       - If the task produces only ONE output file, propose that one agent writes it \
+    and the other reviews, tests, and debugs. This is critical — if both agents write \
+    the same file, one will silently overwrite the other's work.
+       - End with PLAN_READY.
     3. Wait briefly for Agent B to respond (poll with: \
     for i in $(seq 1 15); do grep -q '\\[B|' {collab_file} 2>/dev/null && break; sleep 2; \
     done; cat {collab_file}). If no response after ~30s, start working anyway.
     4. Once you've both agreed on the division, start your part.
 
-    Throughout the task, check {collab_file} regularly for messages from Agent B. \
-    Post brief status updates so Agent B knows you're making progress. Coordinate on \
-    who modifies which files to avoid conflicts. Once you agree on a division, stick to \
-    it — don't do the other agent's part unless you discuss it first. Discuss before \
-    completing. Never block in a loop waiting for the other agent — do useful work instead.
+    AVOIDING FILE CONFLICTS: Before creating or modifying any file, announce it in the \
+    log (e.g. "CLAIMING: extract.js"). If the other agent already claimed that file, do \
+    NOT write to it — help by reviewing their work, writing tests, or debugging instead. \
+    Two agents writing the same file is the #1 cause of failure.
+
+    STATUS UPDATES: Post brief progress updates to {collab_file} every few minutes so \
+    Agent B knows you're alive and working. Example: "Still analyzing binary structure, \
+    will write extract.js soon." This prevents Agent B from assuming you're stuck.
+
+    Throughout the task, check {collab_file} regularly for messages from Agent B. Stick \
+    to the agreed division. Discuss before completing. Never block in a loop waiting — \
+    do useful work instead.
 """).format(collab_file=COLLAB_FILE)
 
 COLLAB_PROMPT_B = textwrap.dedent("""\
@@ -56,14 +68,30 @@ COLLAB_PROMPT_B = textwrap.dedent("""\
     for i in $(seq 1 20); do grep -q 'PLAN_READY' {collab_file} 2>/dev/null && break; \
     sleep 3; done
     2. Read the plan: cat {collab_file}
-    3. If no plan appeared, start working on the task independently.
-    4. Otherwise, reply with your thoughts and confirm the division of work.
+    3. If no plan appeared after ~60s, start working on the task independently.
+    4. Otherwise, reply with your thoughts and confirm the division of work. If there \
+    is only one output file, agree on who writes it — the other agent should review, \
+    test, and debug rather than writing a competing version.
 
-    Throughout the task, check {collab_file} regularly for messages from Agent A. \
-    Post brief status updates so Agent A knows you're making progress. Coordinate on \
-    who modifies which files to avoid conflicts. Once you agree on a division, stick to \
-    it — don't do the other agent's part unless you discuss it first. Discuss before \
-    completing. Never block in a loop waiting for the other agent — do useful work instead.
+    AVOIDING FILE CONFLICTS: Before creating or modifying any file, check {collab_file} \
+    to see if Agent A already claimed it. If so, do NOT write to it — help by reviewing \
+    their work, writing tests, or debugging instead. Two agents writing the same file \
+    is the #1 cause of failure.
+
+    PATIENCE: Your internal sense of elapsed time is unreliable. Before deciding Agent A \
+    is inactive, you MUST run: cat {collab_file} and check the actual timestamps of \
+    Agent A's messages. Only take over Agent A's claimed work if:
+    (a) Agent A explicitly asks for help, OR
+    (b) Agent A's last message timestamp is more than 5 minutes ago AND you have \
+    re-read the log just now to confirm this.
+    If Agent A is still working, do NOT write their files — instead help by analyzing \
+    the problem, investigating edge cases, preparing tests, or posting useful insights \
+    to the log. If you get impatient, write a status message to the log asking Agent A \
+    for an update instead of taking over their work.
+
+    Throughout the task, check {collab_file} regularly for messages from Agent A. Post \
+    brief status updates. Stick to the agreed division. Discuss before completing. Never \
+    block in a loop waiting — do useful work instead.
 """).format(collab_file=COLLAB_FILE)
 
 

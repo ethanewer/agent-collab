@@ -1,0 +1,98 @@
+{
+    "id": "bde35968-030d-42f5-a7a9-005dd6280129",
+    "started_at": "2026-04-08T06:49:07.887329",
+    "finished_at": "2026-04-08T10:26:20.630128",
+    "n_total_trials": 55,
+    "stats": {
+        "n_trials": 55,
+        "n_errors": 10,
+        "evals": {
+            "claude-code-duo__claude-sonnet-4-6__terminal-bench": {
+                "n_trials": 55,
+                "n_errors": 10,
+                "metrics": [
+                    {
+                        "mean": 0.6909090909090909
+                    }
+                ],
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "torch-tensor-parallelism__ZucEfja",
+                            "chess-best-move__wEGPM8z",
+                            "circuit-fibsqrt__3eX8mQs",
+                            "chess-best-move__4wLAX9P",
+                            "circuit-fibsqrt__XBouzDY",
+                            "extract-elf__jDRAY5k",
+                            "torch-tensor-parallelism__vCkMoF5",
+                            "chess-best-move__yTXeRud",
+                            "compile-compcert__w8kx2bK",
+                            "circuit-fibsqrt__T3nyhdR",
+                            "compile-compcert__QxKFHnp",
+                            "circuit-fibsqrt__g6js8Mw",
+                            "extract-elf__2pPWkAb",
+                            "sparql-university__cit4WSN",
+                            "chess-best-move__U43Z5Qb",
+                            "circuit-fibsqrt__SgiBF3x",
+                            "extract-elf__gUxrRXS"
+                        ],
+                        "1.0": [
+                            "multi-source-data-merger__s4CQmWm",
+                            "compile-compcert__i3m3vyt",
+                            "extract-elf__m9ZoWUN",
+                            "git-leak-recovery__xES3oEN",
+                            "sparql-university__Lgps6oR",
+                            "sqlite-db-truncate__643KsX8",
+                            "sanitize-git-repo__SHmypCJ",
+                            "rstan-to-pystan__eHzsjpf",
+                            "torch-tensor-parallelism__QTG6Mg2",
+                            "multi-source-data-merger__4fKb2zR",
+                            "compile-compcert__EwZf3wx",
+                            "git-leak-recovery__EMNZ7FK",
+                            "sparql-university__iWJeDoy",
+                            "sqlite-db-truncate__QPKgU6Q",
+                            "sanitize-git-repo__MRFFveN",
+                            "rstan-to-pystan__9eZMixz",
+                            "multi-source-data-merger__eY7npot",
+                            "extract-elf__eaD2Dh6",
+                            "git-leak-recovery__XdQMLbP",
+                            "sparql-university__r7eWUCb",
+                            "sqlite-db-truncate__dbdwWnE",
+                            "sanitize-git-repo__djGp75e",
+                            "rstan-to-pystan__Sp94M53",
+                            "torch-tensor-parallelism__WawQugL",
+                            "multi-source-data-merger__ZLjAjT3",
+                            "chess-best-move__RMwH4gz",
+                            "git-leak-recovery__KuWNGxx",
+                            "sqlite-db-truncate__DvSp3ht",
+                            "sanitize-git-repo__vWVcCGZ",
+                            "rstan-to-pystan__oiBa4Ez",
+                            "torch-tensor-parallelism__pdceRDX",
+                            "multi-source-data-merger__fejkSsd",
+                            "compile-compcert__jPT4dNF",
+                            "git-leak-recovery__JaYyrqv",
+                            "sparql-university__rLQkwtY",
+                            "sqlite-db-truncate__PEMEL58",
+                            "sanitize-git-repo__p4aDkBQ",
+                            "rstan-to-pystan__jpSLgpo"
+                        ]
+                    }
+                },
+                "exception_stats": {
+                    "AgentTimeoutError": [
+                        "chess-best-move__wEGPM8z",
+                        "circuit-fibsqrt__3eX8mQs",
+                        "chess-best-move__4wLAX9P",
+                        "circuit-fibsqrt__XBouzDY",
+                        "chess-best-move__yTXeRud",
+                        "compile-compcert__w8kx2bK",
+                        "chess-best-move__RMwH4gz",
+                        "compile-compcert__QxKFHnp",
+                        "circuit-fibsqrt__g6js8Mw",
+                        "chess-best-move__U43Z5Qb"
+                    ]
+                }
+            }
+        }
+    }
+}
