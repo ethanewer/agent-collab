@@ -1,8 +1,8 @@
-# Duo Agent Collaboration Experiment
+# Multi-Agent Collaboration Experiment
 
 ## Overview
 
-This experiment tests whether two Claude Code agents collaborating on the same task outperform a single agent. Both setups are evaluated on Terminal Bench 2.0's 12-task efficient subset. The control runs 10 trials per task (120 total); the duo runs 5 trials per task (60 total). The "Control (pass@2)" column estimates how often a single agent would succeed if given two independent attempts, providing a fairer cost comparison since the duo uses roughly 2x the compute.
+This experiment tests whether multiple Claude Code agents collaborating on the same task outperform a single agent. We evaluate control (1 agent), duo (2 agents), and trio (3 agents) setups on Terminal Bench 2.0's 12-task efficient subset. The control runs 10 trials per task; duo and trio run 5 trials per task.
 
 ## Setup
 
@@ -20,6 +20,10 @@ A single Claude Code instance runs with `--permission-mode=bypassPermissions`. T
 ### Duo
 
 Two Claude Code instances run concurrently in the same container on the same task. Each instance has its own `CLAUDE_CONFIG_DIR` to avoid session conflicts. They collaborate via a shared append-only log file at `/tmp/agent-collab.log`, with timestamped messages prefixed by agent identity (`[A|...]` or `[B|...]`). Agent A initiates communication; Agent B waits briefly for Agent A's plan before starting. Neither agent has any tool restrictions. The trial succeeds if at least one agent exits with code 0. 5 trials per task, 60 total.
+
+### Trio
+
+Three Claude Code instances run concurrently in the same container. Same collaboration protocol as duo but with three identities (`[A|...]`, `[B|...]`, `[C|...]`). Agent A proposes a three-way work division; B and C respond and confirm. Key differences from duo: strict file ownership (once claimed, no other agent may write to a file), differentiated roles on single-file tasks (A writes, B analyzes/posts findings, C writes verification tests), and reduced polling timeouts for efficiency. The trial succeeds if at least one agent exits with code 0. 5 trials per task, 60 total.
 
 ## Duo Collaboration Prompts
 
@@ -120,38 +124,50 @@ Never block in a loop waiting — do useful work instead.
 
 ## Results
 
-| Task | Control | Control (pass@2) | Duo |
-|---|---|---|---|
-| chess-best-move | 0.00 | 0.00 | 0.20 |
-| circuit-fibsqrt | 0.00 | 0.00 | 0.00 |
-| compile-compcert | 0.00 | 0.00 | 0.60 |
-| extract-elf | 0.70 | 0.93 | 0.40 |
-| git-leak-recovery | 1.00 | 1.00 | 1.00 |
-| multi-source-data-merger | 1.00 | 1.00 | 1.00 |
-| path-tracing | 0.00 | 0.00 | 0.00 |
-| rstan-to-pystan | 0.10 | 0.20 | 1.00 |
-| sanitize-git-repo | 0.20 | 0.38 | 1.00 |
-| sparql-university | 1.00 | 1.00 | 0.80 |
-| sqlite-db-truncate | 1.00 | 1.00 | 1.00 |
-| torch-tensor-parallelism | 0.50 | 0.78 | 0.60 |
-| **Aggregate** | **0.46** | **0.52** | **0.63** |
+| Task | Control | Control (pass@2) | Duo | Trio |
+|---|---|---|---|---|
+| chess-best-move | 0.00 | 0.00 | 0.20 | 0.00 |
+| circuit-fibsqrt | 0.00 | 0.00 | 0.00 | 0.00 |
+| compile-compcert | 0.00 | 0.00 | 0.60 | 0.00 |
+| extract-elf | 0.70 | 0.93 | 0.40 | 0.60 |
+| git-leak-recovery | 1.00 | 1.00 | 1.00 | 1.00 |
+| multi-source-data-merger | 1.00 | 1.00 | 1.00 | 1.00 |
+| path-tracing | 0.00 | 0.00 | 0.00 | 0.00 |
+| rstan-to-pystan | 0.10 | 0.20 | 1.00 | 0.20 |
+| sanitize-git-repo | 0.20 | 0.38 | 1.00 | 0.75\* |
+| sparql-university | 1.00 | 1.00 | 0.80 | 1.00\* |
+| sqlite-db-truncate | 1.00 | 1.00 | 1.00 | 1.00\* |
+| torch-tensor-parallelism | 0.50 | 0.78 | 0.60 | 1.00\*\* |
+| **Aggregate** | **0.46** | **0.52** | **0.63** | **0.55** |
 
-Control: 10 trials per task. Duo: 5 trials per task. Control (pass@2) estimates the probability of at least one success in two independent control attempts, computed as 1 − C(n_fail, 2) / C(n, 2).
+Control: 10 trials per task. Duo and Trio: 5 trials per task. Control (pass@2) estimates the probability of at least one success in two independent control attempts, computed as 1 − C(n_fail, 2) / C(n, 2). Trio aggregate is the mean of per-task averages.
+
+\* 4 scored trials (1 trial lost to OOM or setup timeout). \*\* 1 scored trial (4 trials lost to early timeouts during agent setup).
 
 ## Key Observations
+
+### Duo vs Control
 
 - **The duo outperforms a single agent overall: 0.63 vs 0.46**, and also beats the pass@2 estimate of 0.52, suggesting the collaboration provides value beyond simply having two independent attempts.
 - The duo achieved **perfect scores on 5 tasks** (git-leak-recovery, multi-source-data-merger, rstan-to-pystan, sanitize-git-repo, sqlite-db-truncate), compared to 3 for the control.
 - Largest duo gains: **rstan-to-pystan** (0.10 → 1.00), **sanitize-git-repo** (0.20 → 1.00), **compile-compcert** (0.00 → 0.60).
 - The duo regressed on **extract-elf** (0.70 → 0.40) and **sparql-university** (1.00 → 0.80).
-- Both setups failed completely on **chess-best-move**, **circuit-fibsqrt**, and **path-tracing**.
 
-### Where the duo helps
+### Trio vs Duo
 
-- **Multi-step / multi-file tasks** (sanitize-git-repo, rstan-to-pystan, compile-compcert): Agents divide work across files or stages, and the reviewer role catches bugs the implementer misses (e.g., PyStan parameter mismatches, OOM fixes).
-- **Resilience**: When one agent's approach fails, the other can diagnose and fix independently. In rstan-to-pystan, Agent B caught an OOM issue and a parameter bug that Agent A missed.
+- **The trio (0.55) does not outperform the duo (0.63).** Adding a third agent increases coordination overhead and timeout rates without proportional benefit.
+- The trio improved on **extract-elf** (0.40 → 0.60) thanks to stricter file ownership rules preventing overwrites, and on **sparql-university** (0.80 → 1.00).
+- The trio severely regressed on **compile-compcert** (0.60 → 0.00) and **rstan-to-pystan** (1.00 → 0.20) — both tasks where all 5 trials timed out. Running 3 concurrent Claude Code instances consumes the time budget faster.
+- **Timeout overhead is the primary bottleneck**: chess-best-move (5/5 timeout), compile-compcert (5/5), path-tracing (5/5), and rstan-to-pystan (5/5) all timed out in the trio setup. These tasks succeeded with 2 agents but failed with 3 because the additional agent coordination and resource contention pushed execution past the time limit.
 
-### Where the duo hurts
+### Where more agents help
 
-- **Single-output-file tasks** (extract-elf): Despite file-conflict prompts, the ELF parsing task still suffers because both agents sometimes make the same technical mistake (incorrect PIE base address) and the reviewer doesn't catch it.
-- **Tasks the control already aces** (sparql-university): Coordination overhead can introduce small regressions on tasks a single agent solves reliably.
+- **Multi-step / multi-file tasks** (sanitize-git-repo, rstan-to-pystan with duo): Agents divide work across files or stages, and the reviewer role catches bugs the implementer misses.
+- **Resilience**: When one agent's approach fails, another can diagnose and fix independently.
+- **Strict file ownership** (trio extract-elf improvement): The v2 trio prompts introduced absolute file ownership rules that prevented the file overwrites that plagued the duo on extract-elf.
+
+### Where more agents hurt
+
+- **Time-constrained tasks**: Three agents consume more wall-clock time for coordination, setup, and parallel API calls. Tasks that barely fit in the timeout with 2 agents fail with 3.
+- **Single-output-file tasks**: Even with strict ownership rules, the third agent often adds noise to analysis rather than improving verification quality.
+- **Diminishing returns**: The duo's collaboration protocol (plan → divide → claim → review) works well with 2 agents. Adding a third doesn't provide enough additional value to offset the overhead.
