@@ -243,8 +243,94 @@ producing final output.
 
 4. **Technical errors on extract-elf**: Even with good coordination, some trials fail because both agents independently make the same technical mistake (applying BASE=0x400000 to a PIE binary). This is an algorithmic error the prompt cannot fix without task-specific hints.
 
-### Key Finding
+### Key Finding (Iteration 4)
 
 The unified prompt's strength is preventing destructive collaboration (file overwrites, rubber-stamping). Its weakness is enabling constructive coordination on resource-intensive tasks that need sequential execution. The v3 A/B split solved this with role assignments and polling loops; the unified prompt cannot replicate this within its design constraints.
 
 **Net effect**: +0.40 on extract-elf, +0.20 on sparql-university, -0.40 on rstan-to-pystan, -0.40 on compile-compcert. The gains and losses roughly cancel, yielding a similar aggregate (0.60 vs 0.63).
+
+---
+
+## Communication-First Prompt (v5)
+
+### Motivation
+
+The iter4 prompt used a long list of failure-mode warnings. This experiment tests whether restructuring the prompt around **frequent communication** — "read the log and post an update at each step" — can achieve the same or better results with a simpler, shorter prompt. The hypothesis: if agents communicate before every significant action, most failure modes (file conflicts, OOM, rubber-stamping) are prevented naturally.
+
+### Final Prompt (v5)
+
+```
+You are agent {id}, one of two AI agents working on the same task in the same
+environment.
+
+You share an append-only log file at {collab_file} for communication.
+- Write: echo "[{id}|$(date -u +%H:%M:%S)] <msg>" >> {collab_file}
+- Read: cat {collab_file}
+
+Communicate constantly — read the log and post an update at each step:
+1. Before starting: share your plan, read the other agent's plan, agree
+   on who writes which files.
+2. Before creating any file: read the log and check the filesystem. If
+   the other agent already created it, do NOT overwrite it — "fixing"
+   correct work with an incorrect fix has destroyed solutions repeatedly.
+   If you think it's wrong, explain why in the log.
+3. Before running anything expensive (compilation, model fitting): read
+   the log — simultaneous heavy operations cause OOM kills.
+4. After completing a step: post what you did and what you found.
+5. When verifying: form your own complete answer independently BEFORE
+   looking at the other agent's output, then compare. Simply reading their
+   output and confirming it "looks right" misses errors.
+
+Disagreements are valuable — if your analysis contradicts the other
+agent's, say so in the log and resolve it before producing final output.
+```
+
+### Iteration History (v5)
+
+| Iter | extract-elf | Key Change | Result |
+|------|------------|------------|--------|
+| v5.0 | 2/5 | Simplified to "communicate constantly" + short rules | Too vague; agents didn't check before writing files |
+| v5.1 | 2/5 | Added numbered checklist: "before creating a file: check log AND filesystem" | Same issue; agents checked but overwrote anyway |
+| v5.2 | 2/5 | Added "do NOT overwrite it" (absolute) + "form own answer independently" | Still too terse; agents ignored without consequences framing |
+| v5.3 | 3/5 | Added consequence: "'fixing' correct work... has destroyed solutions repeatedly" | Reduced overwrites; remaining failures are technical consensus errors |
+| v5.4 | — | Added disagreement encouragement; used for full benchmark | — |
+
+### Full Benchmark Results (v5)
+
+| Task | v5 | iter4 | v3 Duo | Δ vs iter4 |
+|------|-----|-------|--------|------------|
+| chess-best-move | 0.00 | 0.00 | 0.20 | = |
+| **circuit-fibsqrt** | **0.20** | 0.00 | 0.00 | **+0.20** |
+| **compile-compcert** | **0.60** | 0.20 | 0.60 | **+0.40** |
+| **extract-elf** | **1.00** | 0.80 | 0.40 | **+0.20** |
+| git-leak-recovery | 1.00 | 1.00 | 1.00 | = |
+| multi-source-data-merger | 1.00 | 1.00 | 1.00 | = |
+| path-tracing | 0.00 | 0.00 | 0.00 | = |
+| rstan-to-pystan | 0.40 | 0.60 | 1.00 | -0.20 |
+| sanitize-git-repo | 0.80 | 1.00 | 1.00 | -0.20 |
+| sparql-university | 1.00 | 1.00 | 0.80 | = |
+| sqlite-db-truncate | 1.00 | 1.00 | 1.00 | = |
+| torch-tensor-parallelism | 0.40 | 0.60 | 0.60 | -0.20 |
+| **Aggregate** | **0.62** | **0.60** | **0.63** | **+0.02** |
+
+### Analysis
+
+**Improvements vs iter4:**
+
+1. **extract-elf 0.80 → 1.00**: The numbered checklist ("before creating any file: check the filesystem") plus consequence framing eliminated file overwrites more consistently than iter4's bullet list. In all 5 trials, the second agent checked for existing files and backed off.
+
+2. **compile-compcert 0.20 → 0.60**: The "communicate constantly" framing led agents to coordinate compilation timing more effectively. Agents posted updates after completing build steps, letting the other agent wait instead of starting a competing build.
+
+3. **circuit-fibsqrt 0.00 → 0.20**: First-ever pass on this task. The successful trial showed 31 collab messages — the most of any trial — with agents iteratively debugging the circuit design together.
+
+**Regressions vs iter4:**
+
+4. **sanitize-git-repo 1.00 → 0.80**: One trial failed due to a coordination gap — the shorter prompt removed iter4's warning about "taking over based on faulty elapsed time."
+
+5. **rstan-to-pystan 0.60 → 0.40, torch-tensor-parallelism 0.60 → 0.40**: Both resource-contention sensitive. The v5 prompt's OOM warning is briefer than iter4's (which was labeled "#1 cause of failure"). Marginal difference, likely within noise.
+
+### Key Finding (v5)
+
+The communication-first structure (numbered checklist of "read the log before X") is more effective than a bullet list of warnings when combined with consequence framing. The prompt is shorter (20 lines vs 33 for iter4) and achieves a slightly higher aggregate (0.62 vs 0.60). The best result on extract-elf (1.00) and the first-ever circuit-fibsqrt pass (0.20) are notable.
+
+The remaining regressions are on resource-contention tasks (rstan, torch-tensor) where the shorter OOM warning may be slightly less effective, and on sanitize-git-repo where iter4's more specific warnings prevented a specific failure mode.

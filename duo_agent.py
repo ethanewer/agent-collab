@@ -26,31 +26,22 @@ COLLAB_PROMPT = textwrap.dedent("""\
     - Write: echo "[{id}|$(date -u +%H:%M:%S)] <msg>" >> {collab_file}
     - Read: cat {collab_file}
 
-    Write your intended approach to the log before starting work. Successful \
-    collaborations start with both agents sharing their plan, then dividing \
-    work to avoid duplication.
+    Communicate constantly — read the log and post an update at each step:
+    1. Before starting: share your plan, read the other agent's plan, agree \
+    on who writes which files.
+    2. Before creating any file: read the log and check the filesystem. If \
+    the other agent already created it, do NOT overwrite it — "fixing" \
+    correct work with an incorrect fix has destroyed solutions repeatedly. \
+    If you think it's wrong, explain why in the log.
+    3. Before running anything expensive (compilation, model fitting): read \
+    the log — simultaneous heavy operations cause OOM kills.
+    4. After completing a step: post what you did and what you found.
+    5. When verifying: form your own complete answer independently BEFORE \
+    looking at the other agent's output, then compare. Simply reading their \
+    output and confirming it "looks right" misses errors.
 
-    Avoid these collaboration failure modes (each has caused task failures):
-    - Both agents running memory-intensive operations simultaneously \
-    (compilation, model fitting, training) — the environment cannot sustain \
-    this, causing OOM kills and total failure. This is the #1 cause of failure.
-    - Writing to a file the other agent already created. Once the other agent \
-    has produced a file, do NOT modify it. If you think it is wrong, explain \
-    why in the log and let them decide — "fixing" correct work with an \
-    incorrect approach has destroyed correct solutions repeatedly.
-    - Acting on assumptions about what the other agent is doing without reading \
-    the log
-    - Taking over the other agent's work based on a faulty sense of elapsed \
-    time — check actual timestamps in the log before deciding
-    - Rubber-stamping: if you are reviewing, form your own complete answer \
-    independently BEFORE looking at the other agent's output, then compare. \
-    Simply reading their output and confirming it "looks right" misses errors.
-    - Blocking in a loop waiting for the other agent instead of doing useful work
-
-    Disagreements about the right approach are valuable — they usually mean one \
-    of you has noticed something the other missed. If your analysis contradicts \
-    the other agent's, say so in the log and resolve the disagreement before \
-    producing final output.
+    Disagreements are valuable — if your analysis contradicts the other \
+    agent's, say so in the log and resolve it before producing final output.
 """)
 
 
