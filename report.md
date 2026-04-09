@@ -155,3 +155,96 @@ Control: 10 trials per task. Duo: 5 trials per task. Control (pass@2) estimates 
 
 - **Single-output-file tasks** (extract-elf): Despite file-conflict prompts, the ELF parsing task still suffers because both agents sometimes make the same technical mistake (incorrect PIE base address) and the reviewer doesn't catch it.
 - **Tasks the control already aces** (sparql-university): Coordination overhead can introduce small regressions on tasks a single agent solves reliably.
+
+---
+
+## Unified Prompt Experiment
+
+### Motivation
+
+The v3 duo used separate A/B prompts with prescribed methods (polling loops, file-claiming protocol, role assignments). This experiment replaces them with a single outcome-oriented prompt, identical for both agents except for an `{id}` placeholder (`"p"` / `"q"`). The prompt specifies pitfalls and outcomes, not methods, letting agents discover their own coordination strategies.
+
+### Final Prompt (Iteration 4)
+
+```
+You are agent {id}, one of two AI agents working on the same task in the same
+environment.
+
+You share an append-only log file at {collab_file} for communication.
+- Write: echo "[{id}|$(date -u +%H:%M:%S)] <msg>" >> {collab_file}
+- Read: cat {collab_file}
+
+Write your intended approach to the log before starting work. Successful
+collaborations start with both agents sharing their plan, then dividing
+work to avoid duplication.
+
+Avoid these collaboration failure modes (each has caused task failures):
+- Both agents running memory-intensive operations simultaneously
+  (compilation, model fitting, training) — the environment cannot sustain
+  this, causing OOM kills and total failure. This is the #1 cause of failure.
+- Writing to a file the other agent already created. Once the other agent
+  has produced a file, do NOT modify it. If you think it is wrong, explain
+  why in the log and let them decide — "fixing" correct work with an
+  incorrect approach has destroyed correct solutions repeatedly.
+- Acting on assumptions about what the other agent is doing without reading
+  the log
+- Taking over the other agent's work based on a faulty sense of elapsed
+  time — check actual timestamps in the log before deciding
+- Rubber-stamping: if you are reviewing, form your own complete answer
+  independently BEFORE looking at the other agent's output, then compare.
+  Simply reading their output and confirming it "looks right" misses errors.
+- Blocking in a loop waiting for the other agent instead of doing useful work
+
+Disagreements about the right approach are valuable — they usually mean one
+of you has noticed something the other missed. If your analysis contradicts
+the other agent's, say so in the log and resolve the disagreement before
+producing final output.
+```
+
+### Iteration History
+
+| Iter | extract-elf | rstan | Key Change | Diagnosis |
+|------|------------|-------|------------|-----------|
+| 0 | 3/5 (0.60) | 1/5 (0.20) | Baseline unified prompt | rstan: agents skip coordination, both compile Stan → OOM |
+| 1 | 2/5 (0.40) | 4/5 (0.80) | Added "skipping coordination" pitfall, positive framing about sharing plans | extract-elf: agents overwrite each other's correct files |
+| 2 | 3/5 (0.60) | 2/5 (0.40) | Refined file overwrite warning to cover "updating/fixing" | rstan variance due to resource contention at -n 5 |
+| 3 | 3/5 (0.60) | 5/5* (1.00) | Promoted OOM to #1 pitfall, "write to log before starting" | *rstan at -n 2 (isolated); 0/5 at -n 5 due to infra contention |
+| 4 | 5/5 (1.00) | 5/5* (1.00) | "Do NOT modify other's file", "form own answer BEFORE looking" | Focused test: extract-elf and sparql both 5/5 |
+
+### Full Benchmark Results (Iteration 4)
+
+| Task | Unified | v3 Duo | Delta |
+|------|---------|--------|-------|
+| chess-best-move | 0.00 | 0.20 | -0.20 |
+| circuit-fibsqrt | 0.00 | 0.00 | = |
+| compile-compcert | 0.20 | 0.60 | -0.40 |
+| **extract-elf** | **0.80** | 0.40 | **+0.40** |
+| git-leak-recovery | 1.00 | 1.00 | = |
+| multi-source-data-merger | 1.00 | 1.00 | = |
+| path-tracing | 0.00 | 0.00 | = |
+| rstan-to-pystan | 0.60 | 1.00 | -0.40 |
+| sanitize-git-repo | 1.00 | 1.00 | = |
+| **sparql-university** | **1.00** | 0.80 | **+0.20** |
+| sqlite-db-truncate | 1.00 | 1.00 | = |
+| torch-tensor-parallelism | 0.60 | 0.60 | = |
+| **Aggregate** | **0.60** | **0.63** | **-0.03** |
+
+### Collaboration Log Analysis
+
+**Failure modes fixed by the unified prompt (iter4 vs iter0):**
+
+1. **File overwrites eliminated on extract-elf**: In iter0-2, agent p or q would "update" the other's correct extract.js with a wrong BASE=0x400000 approach. The iter4 warning "do NOT modify it... 'fixing' correct work with an incorrect approach has destroyed correct solutions repeatedly" stopped this pattern. extract-elf improved from 0.40 to 0.80.
+
+2. **Rubber-stamping reduced on sparql-university**: In the v3 duo, both agents would converge on subtly wrong SPARQL queries without catching errors. The iter4 instruction to "form your own complete answer independently BEFORE looking at the other agent's output" led to more genuine independent verification. sparql improved from 0.80 to 1.00.
+
+**Failure modes NOT fixed:**
+
+3. **Resource contention on rstan-to-pystan and compile-compcert**: Both tasks require expensive compilation (Stan model / CompCert compiler). Without role assignments, both agents race to start compilation simultaneously, causing OOM. The OOM warning helps when agents read the log, but in many trials agents don't coordinate at all (empty collab logs). At low concurrency (-n 2), rstan achieves 5/5; the failures are infrastructure-level, not prompt-level.
+
+4. **Technical errors on extract-elf**: Even with good coordination, some trials fail because both agents independently make the same technical mistake (applying BASE=0x400000 to a PIE binary). This is an algorithmic error the prompt cannot fix without task-specific hints.
+
+### Key Finding
+
+The unified prompt's strength is preventing destructive collaboration (file overwrites, rubber-stamping). Its weakness is enabling constructive coordination on resource-intensive tasks that need sequential execution. The v3 A/B split solved this with role assignments and polling loops; the unified prompt cannot replicate this within its design constraints.
+
+**Net effect**: +0.40 on extract-elf, +0.20 on sparql-university, -0.40 on rstan-to-pystan, -0.40 on compile-compcert. The gains and losses roughly cancel, yielding a similar aggregate (0.60 vs 0.63).

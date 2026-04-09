@@ -6,7 +6,6 @@ import json
 import os
 import shlex
 import textwrap
-from pathlib import Path
 from typing import Any
 
 from harbor.agents.installed.base import BaseInstalledAgent, with_prompt_template
@@ -19,84 +18,43 @@ COLLAB_FILE = "/tmp/agent-collab.log"
 AGENT_A_LOG = "/tmp/agent-a.log"
 AGENT_B_LOG = "/tmp/agent-b.log"
 
-COLLAB_PROMPT_A = textwrap.dedent("""\
-    You are one of two equal AI agents (you are Agent A, the other is Agent B) working \
-    together in the same environment on the same task.
+COLLAB_PROMPT = textwrap.dedent("""\
+    You are agent {id}, one of two AI agents working on the same task in the same \
+    environment.
 
-    COMMUNICATION: You share a log file at {collab_file}.
-    - Append only: echo "[A|$(date -u +%Y-%m-%dT%H:%M:%S)] <msg>" >> {collab_file}
-    - Read it with: cat {collab_file}
+    You share an append-only log file at {collab_file} for communication.
+    - Write: echo "[{id}|$(date -u +%H:%M:%S)] <msg>" >> {collab_file}
+    - Read: cat {collab_file}
 
-    You go first. Before doing any real work:
-    1. Analyze the task briefly.
-    2. Post a proposed plan to the log file. In your plan:
-       - List which output files need to be created or modified.
-       - If there are multiple output files or areas, propose who handles which.
-       - If the task produces only ONE output file, propose that one agent writes it \
-    and the other reviews, tests, and debugs. This is critical — if both agents write \
-    the same file, one will silently overwrite the other's work.
-       - End with PLAN_READY.
-    3. Wait briefly for Agent B to respond (poll with: \
-    for i in $(seq 1 15); do grep -q '\\[B|' {collab_file} 2>/dev/null && break; sleep 2; \
-    done; cat {collab_file}). If no response after ~30s, start working anyway.
-    4. Once you've both agreed on the division, start your part.
+    Write your intended approach to the log before starting work. Successful \
+    collaborations start with both agents sharing their plan, then dividing \
+    work to avoid duplication.
 
-    AVOIDING FILE CONFLICTS: Before creating or modifying any file, announce it in the \
-    log (e.g. "CLAIMING: extract.js"). If the other agent already claimed that file, do \
-    NOT write to it — help by reviewing their work, writing tests, or debugging instead. \
-    Two agents writing the same file is the #1 cause of failure.
+    Avoid these collaboration failure modes (each has caused task failures):
+    - Both agents running memory-intensive operations simultaneously \
+    (compilation, model fitting, training) — the environment cannot sustain \
+    this, causing OOM kills and total failure. This is the #1 cause of failure.
+    - Writing to a file the other agent already created. Once the other agent \
+    has produced a file, do NOT modify it. If you think it is wrong, explain \
+    why in the log and let them decide — "fixing" correct work with an \
+    incorrect approach has destroyed correct solutions repeatedly.
+    - Acting on assumptions about what the other agent is doing without reading \
+    the log
+    - Taking over the other agent's work based on a faulty sense of elapsed \
+    time — check actual timestamps in the log before deciding
+    - Rubber-stamping: if you are reviewing, form your own complete answer \
+    independently BEFORE looking at the other agent's output, then compare. \
+    Simply reading their output and confirming it "looks right" misses errors.
+    - Blocking in a loop waiting for the other agent instead of doing useful work
 
-    STATUS UPDATES: Post brief progress updates to {collab_file} every few minutes so \
-    Agent B knows you're alive and working. Example: "Still analyzing binary structure, \
-    will write extract.js soon." This prevents Agent B from assuming you're stuck.
-
-    Throughout the task, check {collab_file} regularly for messages from Agent B. Stick \
-    to the agreed division. Discuss before completing. Never block in a loop waiting — \
-    do useful work instead.
-""").format(collab_file=COLLAB_FILE)
-
-COLLAB_PROMPT_B = textwrap.dedent("""\
-    You are one of two equal AI agents (you are Agent B, the other is Agent A) working \
-    together in the same environment on the same task.
-
-    COMMUNICATION: You share a log file at {collab_file}.
-    - Append only: echo "[B|$(date -u +%Y-%m-%dT%H:%M:%S)] <msg>" >> {collab_file}
-    - Read it with: cat {collab_file}
-
-    Agent A goes first. Before doing any real work:
-    1. Wait for Agent A's plan: \
-    for i in $(seq 1 20); do grep -q 'PLAN_READY' {collab_file} 2>/dev/null && break; \
-    sleep 3; done
-    2. Read the plan: cat {collab_file}
-    3. If no plan appeared after ~60s, start working on the task independently.
-    4. Otherwise, reply with your thoughts and confirm the division of work. If there \
-    is only one output file, agree on who writes it — the other agent should review, \
-    test, and debug rather than writing a competing version.
-
-    AVOIDING FILE CONFLICTS: Before creating or modifying any file, check {collab_file} \
-    to see if Agent A already claimed it. If so, do NOT write to it — help by reviewing \
-    their work, writing tests, or debugging instead. Two agents writing the same file \
-    is the #1 cause of failure.
-
-    PATIENCE: Your internal sense of elapsed time is unreliable. Before deciding Agent A \
-    is inactive, you MUST run: cat {collab_file} and check the actual timestamps of \
-    Agent A's messages. Only take over Agent A's claimed work if:
-    (a) Agent A explicitly asks for help, OR
-    (b) Agent A's last message timestamp is more than 5 minutes ago AND you have \
-    re-read the log just now to confirm this.
-    If Agent A is still working, do NOT write their files — instead help by analyzing \
-    the problem, investigating edge cases, preparing tests, or posting useful insights \
-    to the log. If you get impatient, write a status message to the log asking Agent A \
-    for an update instead of taking over their work.
-
-    Throughout the task, check {collab_file} regularly for messages from Agent A. Post \
-    brief status updates. Stick to the agreed division. Discuss before completing. Never \
-    block in a loop waiting — do useful work instead.
-""").format(collab_file=COLLAB_FILE)
+    Disagreements about the right approach are valuable — they usually mean one \
+    of you has noticed something the other missed. If your analysis contradicts \
+    the other agent's, say so in the log and resolve the disagreement before \
+    producing final output.
+""")
 
 
 class DuoClaudeCode(BaseInstalledAgent):
-
     @staticmethod
     def name() -> str:
         return "claude-code-duo"
@@ -138,6 +96,7 @@ class DuoClaudeCode(BaseInstalledAgent):
 
     def parse_version(self, stdout: str) -> str:
         import re
+
         match = re.search(r"(\d+\.\d+\.\d+)", stdout.strip())
         return match.group(1) if match else stdout.strip()
 
@@ -145,7 +104,11 @@ class DuoClaudeCode(BaseInstalledAgent):
         """Build environment variables for Claude Code processes."""
         env: dict[str, str] = {}
 
-        api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN") or ""
+        api_key = (
+            os.environ.get("ANTHROPIC_API_KEY")
+            or os.environ.get("ANTHROPIC_AUTH_TOKEN")
+            or ""
+        )
         if api_key:
             env["ANTHROPIC_API_KEY"] = api_key
 
@@ -193,8 +156,10 @@ class DuoClaudeCode(BaseInstalledAgent):
         saved_b_log = f"{agent_dir}/agent-b-output.log"
 
         escaped_instruction = shlex.quote(instruction)
-        escaped_prompt_a = shlex.quote(COLLAB_PROMPT_A)
-        escaped_prompt_b = shlex.quote(COLLAB_PROMPT_B)
+        prompt_p = COLLAB_PROMPT.format(id="p", collab_file=COLLAB_FILE)
+        prompt_q = COLLAB_PROMPT.format(id="q", collab_file=COLLAB_FILE)
+        escaped_prompt_a = shlex.quote(prompt_p)
+        escaped_prompt_b = shlex.quote(prompt_q)
 
         setup_command = (
             f"mkdir -p {sessions_a}/debug {sessions_a}/projects/-app "
@@ -210,28 +175,23 @@ class DuoClaudeCode(BaseInstalledAgent):
 
         run_command = (
             'export PATH="$HOME/.local/bin:$PATH"; '
-
             f"CLAUDE_CONFIG_DIR={sessions_a} "
             f"claude --verbose --output-format=stream-json "
             f"--permission-mode=bypassPermissions "
             f"--append-system-prompt {escaped_prompt_a} "
             f"--print -- {escaped_instruction} "
             f">{AGENT_A_LOG} 2>&1 & PID_A=$!; "
-
             f"CLAUDE_CONFIG_DIR={sessions_b} "
             f"claude --verbose --output-format=stream-json "
             f"--permission-mode=bypassPermissions "
             f"--append-system-prompt {escaped_prompt_b} "
             f"--print -- {escaped_instruction} "
             f">{AGENT_B_LOG} 2>&1 & PID_B=$!; "
-
             "wait $PID_A; EXIT_A=$?; "
             "wait $PID_B; EXIT_B=$?; "
-
             f"cp {COLLAB_FILE} {saved_collab} 2>/dev/null || true; "
             f"cp {AGENT_A_LOG} {saved_a_log} 2>/dev/null || true; "
             f"cp {AGENT_B_LOG} {saved_b_log} 2>/dev/null || true; "
-
             'echo "Agent A exit=$EXIT_A, Agent B exit=$EXIT_B"; '
             "[ $EXIT_A -eq 0 ] || [ $EXIT_B -eq 0 ]"
         )
@@ -276,7 +236,9 @@ class DuoClaudeCode(BaseInstalledAgent):
                             if isinstance(usage, dict):
                                 total_input += usage.get("input_tokens", 0)
                                 total_input += usage.get("cache_read_input_tokens", 0)
-                                total_input += usage.get("cache_creation_input_tokens", 0)
+                                total_input += usage.get(
+                                    "cache_creation_input_tokens", 0
+                                )
                                 total_output += usage.get("output_tokens", 0)
                 except Exception:
                     continue
