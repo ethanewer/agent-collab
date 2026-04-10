@@ -1,10 +1,10 @@
 # Two Claude Code Agents Are Better Than One
 
-Two Claude Code instances collaborating on the same task outperform a single instance on Terminal Bench 2.0, achieving a **0.65 pass rate** vs **0.46 for a single agent** — with only a short, outcome-focused collaboration prompt.
+Two Claude Code instances collaborating on the same task outperform a single instance on Terminal Bench 2.0, achieving a **0.65 pass rate** vs **0.52 for a single agent (pass@2)**.
 
 ## Setup
 
-Two Claude Code 2.1.92 instances (`claude-sonnet-4-6`) run concurrently in the same Docker container via [Harbor](https://github.com/cthulhoo/harbor) 0.3.0. Each instance has its own `CLAUDE_CONFIG_DIR` to avoid session conflicts. They share an append-only log file for coordination. The trial succeeds if at least one agent exits with code 0.
+Two Claude Code 2.1.92 instances (`claude-sonnet-4-6`) run concurrently in the same Docker container via [Harbor](https://github.com/cthulhoo/harbor) 0.3.0. Each instance has its own `CLAUDE_CONFIG_DIR` to avoid session conflicts. They share an append-only log file for coordination.
 
 Both agents receive the same system prompt, differing only in a one-character identity placeholder (`p` or `q`):
 
@@ -31,7 +31,7 @@ The prompt is intentionally outcome-focused: it describes what successful and fa
 
 ## Results
 
-5 trials per task, 60 total. Control is a single Claude Code instance, 10 trials per task, 120 total. "Control (pass@2)" estimates the probability of at least one success in two independent single-agent attempts — a fairer cost comparison since the duo uses ~2x compute.
+5 trials per task, 60 total. Control is a single Claude Code instance, 10 trials per task, 120 total. "Control (pass@2)" estimates the probability of at least one success in two independent single-agent attempts.
 
 | Task | Control | Control (pass@2) | Duo |
 |------|---------|------------------|-----|
