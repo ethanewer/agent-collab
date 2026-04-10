@@ -2,3 +2,6 @@
 jobs/
 __pycache__/
 *.pyc
+
+.opencode*
+.cursor/
