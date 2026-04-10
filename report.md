@@ -334,3 +334,91 @@ agent's, say so in the log and resolve it before producing final output.
 The communication-first structure (numbered checklist of "read the log before X") is more effective than a bullet list of warnings when combined with consequence framing. The prompt is shorter (20 lines vs 33 for iter4) and achieves a slightly higher aggregate (0.62 vs 0.60). The best result on extract-elf (1.00) and the first-ever circuit-fibsqrt pass (0.20) are notable.
 
 The remaining regressions are on resource-contention tasks (rstan, torch-tensor) where the shorter OOM warning may be slightly less effective, and on sanitize-git-repo where iter4's more specific warnings prevented a specific failure mode.
+
+---
+
+## Outcome-Focused Prompt (v6)
+
+### Motivation
+
+The v5 prompt, while shorter than iter4, still used behavior-focused instructions: a numbered checklist of when to read the log, explicit "do NOT overwrite" prohibitions, and task-specific warnings like "simultaneous heavy operations cause OOM kills." This experiment tests whether a purely outcome-focused prompt — describing what leads to success and failure, not prescribing specific behaviors — can match or exceed v5's 0.62 aggregate.
+
+### Final Prompt (v6)
+
+```
+You are agent {id}, one of two AI agents working on the same task in the same
+environment.
+
+You share an append-only log file at {collab_file} for communication.
+- Write: echo "[{id}|$(date -u +%H:%M:%S)] <msg>" >> {collab_file}
+- Read: cat {collab_file}
+
+Communicate constantly. Always be aware of what the other agent has done,
+is currently doing, and plans to do.
+
+Your goal is to produce better results together than either of you could
+alone. Divide work, verify independently, and build on each other's
+contributions. In every successful collaboration, agents built on each
+other's work. In every failed one, an agent replaced the other's work
+— confident they were improving it, but wrong. When you disagree, talk
+it out in the log.
+```
+
+### Design Principles
+
+The prompt contains only three types of content:
+
+1. **Infrastructure** (lines 1-4): Identity, log file path, read/write commands.
+2. **High-level posture** (line 6): "Communicate constantly. Always be aware..."
+3. **Outcome observations** (lines 8-12): What leads to success vs failure, framed as empirical patterns rather than behavioral rules.
+
+No numbered checklists, no "do NOT" prohibitions, no task-specific warnings (OOM, file conflicts, rubber-stamping). Agents discover their own coordination strategies based on the outcome patterns described.
+
+### Iteration History (v6)
+
+| Iter | Aggregate | extract-elf | Key Framing | Outcome |
+|------|-----------|------------|-------------|---------|
+| v6.0 | 0.55 | 0.40 | Minimal: "divide work, don't duplicate it" | Too lean; no overwrite deterrence |
+| v6.1 | — | 2/5 focused | "undoing each other's correct work" | Agents don't recognize themselves |
+| v6.2 | — | 2/5 focused | "believing they were fixing errors when actually introducing them" | Slightly better but agents still overwrite |
+| v6.3 | 0.57 | 0.20 | "build on each other's work / undo each other's work" | torch-tensor 0.80, rstan 0.60, but extract-elf still low |
+| v6.4 | 0.60 | 0.20 | "replacing files was by far the most common cause of failure" | Close; rstan 0.80, torch 0.80, path-tracing 0.20 |
+| v6.5 | **0.65** | 0.20 | "In every successful... built on. In every failed... replaced — confident, but wrong." | **Best aggregate. 7 tasks at 1.00** |
+
+### Full Benchmark Results (v6)
+
+| Task | v6 | v5 | v3 Duo | Δ vs v5 |
+|------|-----|-----|--------|---------|
+| chess-best-move | 0.00 | 0.00 | 0.20 | = |
+| circuit-fibsqrt | 0.00 | 0.20 | 0.00 | -0.20 |
+| compile-compcert | 0.60 | 0.60 | 0.60 | = |
+| extract-elf | 0.20 | 1.00 | 0.40 | -0.80 |
+| git-leak-recovery | 1.00 | 1.00 | 1.00 | = |
+| multi-source-data-merger | 1.00 | 1.00 | 1.00 | = |
+| path-tracing | 0.00 | 0.00 | 0.00 | = |
+| **rstan-to-pystan** | **1.00** | 0.40 | 1.00 | **+0.60** |
+| **sanitize-git-repo** | **1.00** | 0.80 | 1.00 | **+0.20** |
+| sparql-university | 1.00 | 1.00 | 0.80 | = |
+| sqlite-db-truncate | 1.00 | 1.00 | 1.00 | = |
+| **torch-tensor-parallelism** | **1.00** | 0.40 | 0.60 | **+0.60** |
+| **Aggregate** | **0.65** | **0.62** | **0.63** | **+0.03** |
+
+### Analysis
+
+**Why the outcome-focused prompt scores higher despite losing on extract-elf:**
+
+The v6 prompt achieves 7 perfect-score tasks (vs 5 for v5). The key gains come from tasks where natural, unconstrained collaboration is most valuable:
+
+- **rstan-to-pystan 0.40 → 1.00**: Without prescriptive rules about resource management, agents naturally coordinate compilation timing through constant communication. The simpler prompt doesn't distract with OOM warnings — agents discover the constraint themselves.
+
+- **torch-tensor-parallelism 0.40 → 1.00**: The outcome-focused framing ("build on each other's contributions") leads to genuine collaboration where agents divide the parallelism problem naturally, rather than following a protocol.
+
+- **sanitize-git-repo 0.80 → 1.00**: Without the v5 checklist overhead, agents focus on the task and coordinate organically.
+
+**The extract-elf trade-off (1.00 → 0.20):**
+
+Extract-elf requires agents to NOT overwrite each other's files — a specific behavior the outcome-focused prompt can only hint at through pattern description. The "confident they were improving it, but wrong" framing helps some trials but doesn't match the effectiveness of v5's explicit "do NOT overwrite" prohibition. This is the fundamental cost of outcome-focused prompting: it trades precision on specific failure modes for better overall collaboration quality.
+
+### Key Finding (v6)
+
+Outcome-focused prompts that describe success/failure patterns outperform behavior-focused prompts with explicit rules — achieving 0.65 vs 0.62 aggregate. The mechanism: prescriptive rules constrain agents on ALL tasks (including ones that don't need the constraint), while outcome descriptions let agents apply judgment about when the pattern is relevant. The net effect is better performance on the majority of tasks at the cost of one task (extract-elf) where the specific behavioral constraint was critical.

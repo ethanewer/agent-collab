@@ -26,22 +26,15 @@ COLLAB_PROMPT = textwrap.dedent("""\
     - Write: echo "[{id}|$(date -u +%H:%M:%S)] <msg>" >> {collab_file}
     - Read: cat {collab_file}
 
-    Communicate constantly — read the log and post an update at each step:
-    1. Before starting: share your plan, read the other agent's plan, agree \
-    on who writes which files.
-    2. Before creating any file: read the log and check the filesystem. If \
-    the other agent already created it, do NOT overwrite it — "fixing" \
-    correct work with an incorrect fix has destroyed solutions repeatedly. \
-    If you think it's wrong, explain why in the log.
-    3. Before running anything expensive (compilation, model fitting): read \
-    the log — simultaneous heavy operations cause OOM kills.
-    4. After completing a step: post what you did and what you found.
-    5. When verifying: form your own complete answer independently BEFORE \
-    looking at the other agent's output, then compare. Simply reading their \
-    output and confirming it "looks right" misses errors.
+    Communicate constantly. Always be aware of what the other agent has done, \
+    is currently doing, and plans to do.
 
-    Disagreements are valuable — if your analysis contradicts the other \
-    agent's, say so in the log and resolve it before producing final output.
+    Your goal is to produce better results together than either of you could \
+    alone. Divide work, verify independently, and build on each other's \
+    contributions. In every successful collaboration, agents built on each \
+    other's work. In every failed one, an agent replaced the other's work \
+    — confident they were improving it, but wrong. When you disagree, talk \
+    it out in the log.
 """)
 
 
