@@ -11,11 +11,11 @@ JOBS_DIR = Path(__file__).parent / "jobs"
 
 TIMEOUT_ERRORS = {"AgentTimeoutError"}
 
-SYM_PASS = "\033[32m\u2713\033[0m"
-SYM_FAIL = "\033[31m\u2717\033[0m"
-SYM_TIMEOUT = "\033[33mT\033[0m"
-SYM_ERROR = "\033[90mE\033[0m"
-SYM_PENDING = "\033[90m\u00b7\033[0m"
+SYM_PASS = "P"
+SYM_FAIL = "F"
+SYM_TIMEOUT = "T"
+SYM_ERROR = "E"
+SYM_PENDING = "."
 
 
 def find_job_groups(jobs_dir: Path) -> list[Path]:
@@ -29,9 +29,19 @@ def find_shards(job_group: Path) -> list[Path]:
     return shards if shards else [job_group]
 
 
+def is_rerun_shard(shard: Path) -> bool:
+    """Check if a shard directory is a rerun (name contains 'rerun')."""
+    return "rerun" in shard.name
+
+
+def find_all_runs(shard: Path) -> list[Path]:
+    """Find all run directories (timestamp-named) in a shard."""
+    return sorted(e for e in shard.iterdir() if e.is_dir() and (e / "config.json").exists())
+
+
 def find_latest_run(shard: Path) -> Path | None:
     """Find the most recent run directory (timestamp-named) in a shard."""
-    runs = sorted(e for e in shard.iterdir() if e.is_dir() and (e / "config.json").exists())
+    runs = find_all_runs(shard)
     return runs[-1] if runs else None
 
 
@@ -101,21 +111,32 @@ def main():
 
     for group in job_groups:
         shards = find_shards(group)
-        all_trials = []
+        main_trials = []
+        rerun_trials = []
         run_count = 0
+        rerun_run_count = 0
         all_expected_tasks: set[str] = set()
         n_attempts = 1
 
         for shard in shards:
-            run_dir = find_latest_run(shard)
-            if run_dir is None:
-                continue
-            run_count += 1
-            tasks, attempts = get_expected_tasks_and_attempts(run_dir)
-            all_expected_tasks.update(tasks)
-            n_attempts = max(n_attempts, attempts)
-            all_trials.extend(read_trial_results(run_dir))
+            is_rerun = is_rerun_shard(shard)
+            runs = find_all_runs(shard)
 
+            for run_dir in runs:
+                if is_rerun:
+                    rerun_run_count += 1
+                else:
+                    run_count += 1
+                tasks, attempts = get_expected_tasks_and_attempts(run_dir)
+                all_expected_tasks.update(tasks)
+                n_attempts = max(n_attempts, attempts)
+                trials = read_trial_results(run_dir)
+                if is_rerun:
+                    rerun_trials.extend(trials)
+                else:
+                    main_trials.extend(trials)
+
+        all_trials = main_trials + rerun_trials
         if not all_trials:
             continue
 
@@ -123,13 +144,14 @@ def main():
         n_completed = 0
         n_timeout = 0
         n_errored = 0
-        task_results: dict[str, list[tuple[str, float | None]]] = defaultdict(list)
+        task_results: dict[str, list[tuple[str, float | None, str]]] = defaultdict(list)
         error_types: dict[str, int] = defaultdict(int)
+        task_errors: dict[str, int] = defaultdict(int)
 
-        for trial in all_trials:
+        for trial in main_trials:
             status, reward = classify_trial(trial)
             task_name = trial.get("task_name", "unknown")
-            task_results[task_name].append((status, reward))
+            task_results[task_name].append((status, reward, "main"))
 
             if status in ("pass", "fail"):
                 n_completed += 1
@@ -141,25 +163,52 @@ def main():
                     scored_rewards.append(reward)
             else:
                 n_errored += 1
+                task_errors[task_name] += 1
                 exc_type = trial.get("exception_info", {}).get("exception_type", "Unknown")
                 error_types[exc_type] += 1
 
-        n_total_expected = len(all_expected_tasks) * n_attempts
-        n_pending = n_total_expected - len(all_trials)
+        rerun_scored_rewards = []
+        rerun_completed = 0
+        rerun_timeout = 0
+        rerun_errored = 0
+        rerun_error_types: dict[str, int] = defaultdict(int)
 
-        score = sum(scored_rewards) / len(scored_rewards) if scored_rewards else 0.0
-        n_pass = sum(1 for r in scored_rewards if r >= 0.5)
-        n_fail = sum(1 for r in scored_rewards if r < 0.5)
+        for trial in rerun_trials:
+            status, reward = classify_trial(trial)
+            task_name = trial.get("task_name", "unknown")
+            task_results[task_name].append((status, reward, "rerun"))
+
+            if status in ("pass", "fail"):
+                rerun_completed += 1
+                if reward is not None:
+                    rerun_scored_rewards.append(reward)
+            elif status == "timeout":
+                rerun_timeout += 1
+                if reward is not None:
+                    rerun_scored_rewards.append(reward)
+            else:
+                rerun_errored += 1
+                task_errors[task_name] += 1
+                exc_type = trial.get("exception_info", {}).get("exception_type", "Unknown")
+                rerun_error_types[exc_type] += 1
+
+        n_total_expected = len(all_expected_tasks) * n_attempts
+        n_pending = n_total_expected - len(main_trials)
+
+        all_scored = scored_rewards + rerun_scored_rewards
+        score = sum(all_scored) / len(all_scored) if all_scored else 0.0
+        n_pass = sum(1 for r in all_scored if r >= 0.5)
+        n_fail = sum(1 for r in all_scored if r < 0.5)
 
         print(f"{'=' * 70}")
         print(f"  Job: {group.name}")
         print(f"{'=' * 70}")
-        print(f"  Score:     {score:.1%}  ({n_pass} pass / {n_fail} fail of {len(scored_rewards)} scored)")
+        print(f"  Score:     {score:.1%}  ({n_pass} pass / {n_fail} fail of {len(all_scored)} scored)")
         print(f"  Completed: {n_completed + n_timeout}  ({n_completed} ok + {n_timeout} timeout)")
         print(f"  Errored:   {n_errored}")
         if n_pending > 0:
             print(f"  Pending:   {n_pending}")
-        print(f"  Total:     {len(all_trials)}/{n_total_expected}  "
+        print(f"  Total:     {len(main_trials)}/{n_total_expected}  "
               f"(across {run_count} shards, {n_attempts} attempts/task)")
 
         if error_types:
@@ -167,20 +216,29 @@ def main():
             for etype, count in sorted(error_types.items(), key=lambda x: -x[1]):
                 print(f"    {etype}: {count}")
 
+        # Rerun status
+        rerun_scored_total = rerun_completed + rerun_timeout
+        if n_errored > 0:
+            remaining = max(0, n_errored - rerun_scored_total)
+            print(f"  Reruns:    {rerun_scored_total}/{n_errored} done"
+                  + (f"  ({rerun_errored} rerun errors)" if rerun_errored else "")
+                  + (f"  [{remaining} remaining]" if remaining else ""))
+
         if args.verbose:
             print(f"\n  Per-task results ({n_attempts} attempts each):")
             for task_name in sorted(all_expected_tasks):
                 entries = task_results.get(task_name, [])
                 parts = []
-                for status, _reward in entries:
-                    if status == "pass":
-                        parts.append(SYM_PASS)
-                    elif status == "fail":
-                        parts.append(SYM_FAIL)
-                    elif status == "timeout":
-                        parts.append(SYM_TIMEOUT)
-                    else:
-                        parts.append(SYM_ERROR)
+                for status, _reward, source in entries:
+                    sym = {
+                        "pass": SYM_PASS,
+                        "fail": SYM_FAIL,
+                        "timeout": SYM_TIMEOUT,
+                        "error": SYM_ERROR,
+                    }.get(status, SYM_PENDING)
+                    if source == "rerun":
+                        sym = f"[{sym}]"
+                    parts.append(sym)
                 while len(parts) < n_attempts:
                     parts.append(SYM_PENDING)
                 print(f"    {task_name:45s} {' '.join(parts)}")
