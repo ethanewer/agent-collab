@@ -4,4 +4,17 @@ __pycache__/
 *.pyc
 
 .opencode*
-.cursor/
+.cursor*
+.omc*
+
+*.out
+*.err
+*.log
+old/
+
+# Docker / SLURM runtime artifacts
+docker-image-cache/
+docker-data/
+task-shards/
+.venv/
+.cache/
