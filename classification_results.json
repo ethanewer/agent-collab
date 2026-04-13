@@ -1,0 +1,630 @@
+{
+  "model": "claude-haiku-4-5",
+  "system_prompt": "You route tasks to one AI agent or two collaborating agents (duo). Use duo by default - it is almost always better.\n\nUse single ONLY for tasks where the ENTIRE deliverable is a single, self-contained file (one script, one program, one proof) AND the task has no setup, installation, or configuration steps alongside it. In these cases, two agents would fight over writing the same file.\n\nIf the task involves ANY of: installing software, configuring services, working with multiple files, debugging an existing system, or running tests - use duo even if there is a main output file, because the other agent can handle the peripheral work.\n\nRespond with ONLY valid JSON: {\"use_duo\": true/false, \"reasoning\": \"brief\"}",
+  "n_classify_runs": 5,
+  "classifications": {
+    "adaptive-rejection-sampler": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "bn-fit-modify": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "break-filter-js-from-html": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "build-cython-ext": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "build-pmars": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "build-pov-ray": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "caffe-cifar-10": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "cancel-async-tasks": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "chess-best-move": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "circuit-fibsqrt": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "cobol-modernization": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "code-from-image": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "compile-compcert": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "configure-git-webserver": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "constraints-scheduling": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "count-dataset-tokens": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "crack-7z-hash": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "custom-memory-heap-crash": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "db-wal-recovery": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "distribution-search": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ],
+    "dna-assembly": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "dna-insert": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "extract-elf": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "extract-moves-from-video": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "feal-differential-cryptanalysis": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "feal-linear-cryptanalysis": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "filter-js-from-html": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "financial-document-processor": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "fix-code-vulnerability": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "fix-git": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "fix-ocaml-gc": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "gcode-to-text": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "git-leak-recovery": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "git-multibranch": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "gpt2-codegolf": [
+      true,
+      false,
+      true,
+      false,
+      false
+    ],
+    "headless-terminal": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "hf-model-inference": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "install-windows-3.11": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "kv-store-grpc": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "large-scale-text-editing": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "largest-eigenval": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "llm-inference-batching-scheduler": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "log-summary-date-ranges": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mailman": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "make-doom-for-mips": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "make-mips-interpreter": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mcmc-sampling-stan": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "merge-diff-arc-agi-task": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "model-extraction-relu-logits": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "modernize-scientific-stack": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mteb-leaderboard": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mteb-retrieve": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "multi-source-data-merger": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "nginx-request-logging": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "openssl-selfsigned-cert": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "overfull-hbox": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "password-recovery": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "path-tracing": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "path-tracing-reverse": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "polyglot-c-py": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "polyglot-rust-c": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "portfolio-optimization": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "protein-assembly": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "prove-plus-comm": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "pypi-server": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "pytorch-model-cli": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "pytorch-model-recovery": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "qemu-alpine-ssh": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "qemu-startup": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "query-optimize": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "raman-fitting": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "regex-chess": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "regex-log": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "reshard-c4-data": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "rstan-to-pystan": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sam-cell-seg": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sanitize-git-repo": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "schemelike-metacircular-eval": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sparql-university": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sqlite-db-truncate": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sqlite-with-gcov": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "torch-pipeline-parallelism": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "torch-tensor-parallelism": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "train-fasttext": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "tune-mjcf": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "video-processing": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vulnerable-secret": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "winning-avg-corewars": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "write-compressor": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  }
+}
