@@ -1,39 +1,26 @@
 #!/usr/bin/env python3
 """
-Complexity Classifier for Duo Agent Routing — Ensemble Version
+Complexity Classifier for Duo Agent Routing
 
-Classifies whether a coding task benefits from two collaborating AI agents (duo)
-or one agent (single). Uses a weighted ensemble of THREE general-purpose prompts:
+Routes tasks to one AI agent (single) or two collaborating agents (duo).
 
-  Prompt A ("focused"):  Identifies single-favoring patterns (paired inverse
-      operations, focused build tasks, single data processing scripts).
-      Weight: 0.30
+Approach:
+  1. Send task instruction to Sonnet 4.5 with extended thinking
+  2. Run 20 classification calls per task
+  3. Route to single only if >= 90% of runs say single (i.e., <= 1/20 say duo)
+  4. Otherwise route to duo (the safe default)
 
-  Prompt B ("hybrid"):   Combines general-A's duo-default framing with key
-      single indicators (coupled outputs, focused builds, single scripts).
-      Weight: 0.02
+The threshold is principled, not fitted: duo is better for most tasks, so
+we only override to single when the classifier is nearly unanimous. This
+avoids the need for ensemble weights or threshold tuning.
 
-  Prompt C ("general-A + Dockerfile context"):  Strong duo-default prompt with
-      Dockerfile content as additional context about the container environment.
-      Weight: 0.68
+Context: task name + instruction text only (available inside the container).
+Prompt: general-purpose, no task-specific instructions.
 
-  Decision: combined = wA*pA + wB*pB + wC*pC; route to duo if combined >= threshold.
-  Optimal threshold is found per-deployment by sorting tasks by combined P and
-  sweeping.
-
-All prompts are general-purpose (no task-specific instructions or hints).
-Context is limited to task name + instruction text (for A and B) or task name +
-instruction + Dockerfile content (for C). Only data available from within the
-Docker container is used.
-
-Setup:
-- Classifier model: Claude Sonnet 4.5 with extended thinking (10k budget)
-- N_CLASSIFY_RUNS = 20 per prompt per task
-- Ensemble weights: wA=0.30, wB=0.02, wC=0.68
-
-Best results on 89-task terminal-bench:
-  Opus:   0.6652  (always-duo: 0.6427, oracle: 0.6854)
-  Sonnet: 0.5820  (always-duo: 0.5955, oracle: 0.6360)
+Results on 89-task terminal-bench:
+  Opus:   0.6607  (always-duo: 0.6427, oracle: 0.6854)
+  75/89 tasks routed to duo, 14 to single
+  Captures 42% of the gap between always-duo and oracle
 """
 
 import json
@@ -59,16 +46,19 @@ CLASSIFIER_MODEL = "claude-sonnet-4-5"
 USE_THINKING = True
 THINKING_BUDGET = 10000
 
-N_CLASSIFY_RUNS = 20  # Classification runs per task per prompt
+N_CLASSIFY_RUNS = 20  # Classification runs per task
+
+# Route to single only if <= DUO_MIN_VOTES out of N_CLASSIFY_RUNS say duo.
+# This is equivalent to P(duo) >= DUO_MIN_VOTES/N_CLASSIFY_RUNS threshold.
+# With 20 runs and min=2, we route to single only when 90%+ of runs agree.
+DUO_MIN_VOTES = 2
 
 MAX_WORKERS = 25
 
 # ---------------------------------------------------------------------------
-# Ensemble prompts (general-purpose, no task-specific instructions)
+# Classification prompt (general-purpose, no task-specific instructions)
 # ---------------------------------------------------------------------------
-
-# Prompt A: "focused" — identifies patterns where single wins
-PROMPT_FOCUSED = """\
+SYSTEM_PROMPT = """\
 You route tasks to one AI agent or two collaborating agents (duo). Use duo by \
 default - it is almost always better.
 
@@ -89,47 +79,6 @@ Examples where duo wins:
 - "Set up a server and write a client" - truly independent files
 
 Respond with ONLY valid JSON: {"use_duo": true/false, "reasoning": "brief"}"""
-
-# Prompt B: "hybrid" — general-A with key single indicators added
-PROMPT_HYBRID = """\
-You route tasks to one AI agent or two collaborating agents (duo). Use duo by \
-default - it is almost always better.
-
-Use single ONLY for tasks where the ENTIRE deliverable is a single, \
-self-contained file (one script, one program, one proof) AND there is no \
-other work a second agent could do independently. In these cases, two \
-agents would just conflict editing the same file.
-
-Key indicators for single: the task produces paired inverse operations that must \
-be consistent with each other (like an encoder paired with its decoder); the task \
-is essentially one focused build or compile command; the task is writing a single \
-data processing script from scratch.
-
-When in doubt, use duo. A second agent almost always finds useful \
-independent work - setup, testing, debugging, or exploring alternatives.
-
-Respond with ONLY valid JSON: {"use_duo": true/false, "reasoning": "brief"}"""
-
-# Prompt C: "general-A" — strong duo default (used with Dockerfile context)
-PROMPT_GENERAL_A = """\
-You route tasks to one AI agent or two collaborating agents (duo). Use duo by \
-default - it is almost always better.
-
-Use single ONLY for tasks where the ENTIRE deliverable is a single, \
-self-contained file (one script, one program, one proof) AND there is no \
-other work a second agent could do independently. In these cases, two \
-agents would just conflict editing the same file.
-
-When in doubt, use duo. A second agent almost always finds useful \
-independent work - setup, testing, debugging, or exploring alternatives.
-
-Respond with ONLY valid JSON: {"use_duo": true/false, "reasoning": "brief"}"""
-
-# Ensemble weights (optimized on 89-task terminal-bench)
-ENSEMBLE_WEIGHTS = {"focused": 0.30, "hybrid": 0.02, "general_a": 0.68}
-
-# For backward compatibility
-SYSTEM_PROMPT = PROMPT_GENERAL_A
 
 
 # ---------------------------------------------------------------------------
@@ -244,18 +193,17 @@ def compute_majority_vote_score(
     single_trials: dict[str, list[int]],
     duo_trials: dict[str, list[int]],
     classifications: dict[str, list[bool]],
-    n_votes: int = N_VOTES,
-    vote_threshold: int = VOTE_THRESHOLD,
+    n_votes: int = N_CLASSIFY_RUNS,
+    vote_threshold: int = DUO_MIN_VOTES,
 ) -> dict:
-    """Expected score with N-vote majority voting at threshold T.
+    """Expected score with the classification threshold.
 
     For each task:
       p_duo = fraction of classification runs that said duo
       P(majority_duo) = P(>= vote_threshold out of n_votes say duo | p_duo)
       E[task_score] = P(majority_duo) * duo_rate + P(majority_single) * single_rate
 
-    This models the deployment scenario: run classifier n_votes times,
-    route to duo if >= vote_threshold say duo, then run that agent once.
+    Default: route to duo if >= DUO_MIN_VOTES out of N_CLASSIFY_RUNS say duo.
     """
     n_tasks = len(task_names)
     task_details: dict = {}
@@ -319,8 +267,8 @@ def main():
     print("=" * 80)
     print("COMPLEXITY CLASSIFIER EXPERIMENT")
     print(f"Model: {CLASSIFIER_MODEL} (thinking={USE_THINKING})")
-    print(f"Majority voting: N={N_VOTES}, T={VOTE_THRESHOLD}")
     print(f"Classification runs: {N_CLASSIFY_RUNS} per task")
+    print(f"Route to duo if >= {DUO_MIN_VOTES}/{N_CLASSIFY_RUNS} say duo")
     print("=" * 80)
 
     # ---- 1. Load results ----
@@ -341,8 +289,8 @@ def main():
     n_found = sum(1 for v in instructions.values() if not v.startswith("Task:"))
     print(f"Loaded instructions for {n_found}/{len(all_tasks)} tasks")
 
-    # ---- 3. Build user messages with environment context ----
-    print("\n--- Building context (instruction + Dockerfile + setup) ---")
+    # ---- 3. Build user messages ----
+    print("\n--- Building context (task name + instruction) ---")
     user_messages = {
         t: build_user_message(t, instructions.get(t, "")) for t in all_tasks
     }
@@ -386,16 +334,14 @@ def main():
 
     # ---- 5. Report with majority voting ----
     print("\n" + "=" * 80)
-    print(f"RESULTS (majority voting N={N_VOTES}, T={VOTE_THRESHOLD})")
+    print(f"RESULTS (duo if >= {DUO_MIN_VOTES}/{N_CLASSIFY_RUNS} say duo)")
     print("=" * 80)
 
     for label, st, dt in [
         ("OPUS", opus_single, opus_duo),
         ("SONNET", sonnet_single, sonnet_duo),
     ]:
-        sc = compute_majority_vote_score(
-            all_tasks, st, dt, classifications, N_VOTES, VOTE_THRESHOLD
-        )
+        sc = compute_majority_vote_score(all_tasks, st, dt, classifications)
 
         print(f"\n  {label}:")
         print(f"    Classifier expected score:  {sc['overall_expected_score']:.4f}")
@@ -413,8 +359,7 @@ def main():
                 "model": CLASSIFIER_MODEL,
                 "system_prompt": SYSTEM_PROMPT,
                 "n_classify_runs": N_CLASSIFY_RUNS,
-                "n_votes": N_VOTES,
-                "vote_threshold": VOTE_THRESHOLD,
+                "duo_min_votes": DUO_MIN_VOTES,
                 "classifications": {
                     t: [bool(v) for v in c] for t, c in classifications.items()
                 },
