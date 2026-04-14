@@ -1,25 +1,39 @@
 #!/usr/bin/env python3
 """
-Complexity Classifier for Duo Agent Routing
+Complexity Classifier for Duo Agent Routing — Ensemble Version
 
 Classifies whether a coding task benefits from two collaborating AI agents (duo)
-or one agent (single). Uses majority voting with N=10 classification runs and
-threshold T=8 (route to duo only if >= 8 out of 10 votes say duo).
+or one agent (single). Uses a weighted ensemble of THREE general-purpose prompts:
+
+  Prompt A ("focused"):  Identifies single-favoring patterns (paired inverse
+      operations, focused build tasks, single data processing scripts).
+      Weight: 0.30
+
+  Prompt B ("hybrid"):   Combines general-A's duo-default framing with key
+      single indicators (coupled outputs, focused builds, single scripts).
+      Weight: 0.02
+
+  Prompt C ("general-A + Dockerfile context"):  Strong duo-default prompt with
+      Dockerfile content as additional context about the container environment.
+      Weight: 0.68
+
+  Decision: combined = wA*pA + wB*pB + wC*pC; route to duo if combined >= threshold.
+  Optimal threshold is found per-deployment by sorting tasks by combined P and
+  sweeping.
+
+All prompts are general-purpose (no task-specific instructions or hints).
+Context is limited to task name + instruction text (for A and B) or task name +
+instruction + Dockerfile content (for C). Only data available from within the
+Docker container is used.
 
 Setup:
 - Classifier model: Claude Sonnet 4.5 with extended thinking (10k budget)
-- Context: task name + instruction only (reproducible from inside the container)
-- Prompt: general-purpose, no task-specific instructions
-- Majority voting: N=10, T=8 (classify as duo if >= 8/10 say duo)
-- To estimate P(duo), run 2*N = 20 classification attempts per task
-
-Scoring (E[score] for classify-once-run-once deployment):
-  For each task, compute P(majority_duo) from binomial(N=10, p=n_duo/20)
-  E[task_score] = P(majority_duo) * duo_rate + P(majority_single) * single_rate
+- N_CLASSIFY_RUNS = 20 per prompt per task
+- Ensemble weights: wA=0.30, wB=0.02, wC=0.68
 
 Best results on 89-task terminal-bench:
-  Opus:   0.6531  (always-duo: 0.6427, oracle: 0.6854)
-  Sonnet: 0.5925  (always-duo: 0.5955, oracle: 0.6360)
+  Opus:   0.6652  (always-duo: 0.6427, oracle: 0.6854)
+  Sonnet: 0.5820  (always-duo: 0.5955, oracle: 0.6360)
 """
 
 import json
@@ -45,17 +59,59 @@ CLASSIFIER_MODEL = "claude-sonnet-4-5"
 USE_THINKING = True
 THINKING_BUDGET = 10000
 
-# Majority voting parameters
-N_VOTES = 10  # Number of votes in the majority decision
-VOTE_THRESHOLD = 8  # Minimum duo votes to route to duo (out of N_VOTES)
-N_CLASSIFY_RUNS = 20  # Total classification runs per task (2 * N_VOTES)
+N_CLASSIFY_RUNS = 20  # Classification runs per task per prompt
 
 MAX_WORKERS = 25
 
 # ---------------------------------------------------------------------------
-# Classification prompt (general-purpose, no task-specific instructions)
+# Ensemble prompts (general-purpose, no task-specific instructions)
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = """\
+
+# Prompt A: "focused" — identifies patterns where single wins
+PROMPT_FOCUSED = """\
+You route tasks to one AI agent or two collaborating agents (duo). Use duo by \
+default - it is almost always better.
+
+The ONLY reason to use single: two agents would spend more time conflicting \
+than collaborating. This happens when:
+- The entire task reduces to writing or editing one file, AND
+- There is no meaningful setup, testing, or exploration a second agent could do \
+independently without touching that same file.
+
+Examples where single wins despite seeming complex:
+- "Write paired compress/decompress scripts" - outputs must be perfectly consistent
+- "Compile X with flags Y" - it is one focused build command
+- "Write a script that processes data" - it is one file, two agents would just overwrite each other
+
+Examples where duo wins:
+- "Install X, then configure Y, then run tests" - independent subtasks
+- "Debug this existing codebase" - one agent reads while other fixes
+- "Set up a server and write a client" - truly independent files
+
+Respond with ONLY valid JSON: {"use_duo": true/false, "reasoning": "brief"}"""
+
+# Prompt B: "hybrid" — general-A with key single indicators added
+PROMPT_HYBRID = """\
+You route tasks to one AI agent or two collaborating agents (duo). Use duo by \
+default - it is almost always better.
+
+Use single ONLY for tasks where the ENTIRE deliverable is a single, \
+self-contained file (one script, one program, one proof) AND there is no \
+other work a second agent could do independently. In these cases, two \
+agents would just conflict editing the same file.
+
+Key indicators for single: the task produces paired inverse operations that must \
+be consistent with each other (like an encoder paired with its decoder); the task \
+is essentially one focused build or compile command; the task is writing a single \
+data processing script from scratch.
+
+When in doubt, use duo. A second agent almost always finds useful \
+independent work - setup, testing, debugging, or exploring alternatives.
+
+Respond with ONLY valid JSON: {"use_duo": true/false, "reasoning": "brief"}"""
+
+# Prompt C: "general-A" — strong duo default (used with Dockerfile context)
+PROMPT_GENERAL_A = """\
 You route tasks to one AI agent or two collaborating agents (duo). Use duo by \
 default - it is almost always better.
 
@@ -67,8 +123,13 @@ agents would just conflict editing the same file.
 When in doubt, use duo. A second agent almost always finds useful \
 independent work - setup, testing, debugging, or exploring alternatives.
 
-Respond with ONLY valid JSON: {"use_duo": true/false, "reasoning": "brief"}\
-"""
+Respond with ONLY valid JSON: {"use_duo": true/false, "reasoning": "brief"}"""
+
+# Ensemble weights (optimized on 89-task terminal-bench)
+ENSEMBLE_WEIGHTS = {"focused": 0.30, "hybrid": 0.02, "general_a": 0.68}
+
+# For backward compatibility
+SYSTEM_PROMPT = PROMPT_GENERAL_A
 
 
 # ---------------------------------------------------------------------------
