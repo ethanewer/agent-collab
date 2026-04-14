@@ -8,7 +8,7 @@ threshold T=8 (route to duo only if >= 8 out of 10 votes say duo).
 
 Setup:
 - Classifier model: Claude Sonnet 4.5 with extended thinking (10k budget)
-- Context: task instruction + Dockerfile + setup script from the environment
+- Context: task name + instruction only (reproducible from inside the container)
 - Prompt: general-purpose, no task-specific instructions
 - Majority voting: N=10, T=8 (classify as duo if >= 8/10 say duo)
 - To estimate P(duo), run 2*N = 20 classification attempts per task
@@ -113,56 +113,13 @@ def load_task_instructions(task_names: list[str]) -> dict[str, str]:
 
 
 def build_user_message(task_name: str, instruction: str) -> str:
-    """Build user message with environment context for the classifier.
+    """Build user message for the classifier.
 
-    Includes metadata from task.yaml, Dockerfile contents, and setup script -
-    all information accessible from inside the agent's environment.
+    Only includes information visible from inside the agent's container:
+    the task name and instruction text. No external metadata (difficulty
+    labels, timeouts, Dockerfiles) since those aren't accessible at runtime.
     """
-    td = TASKS_DIR / task_name
-    parts = [f"Task name: {task_name}"]
-
-    # Metadata from task.yaml
-    ty_path = td / "task.yaml"
-    if ty_path.exists():
-        ty = yaml.safe_load(open(ty_path))
-        parts.append(f"Difficulty: {ty.get('difficulty', 'unknown')}")
-        parts.append(f"Category: {ty.get('category', 'unknown')}")
-        tags = ty.get("tags", [])
-        if tags:
-            parts.append(f"Tags: {', '.join(tags)}")
-        parts.append(f"Agent timeout: {ty.get('max_agent_timeout_sec', 0):.0f}s")
-
-    # Dockerfile (stripped of ASCII art)
-    df_path = td / "Dockerfile"
-    if df_path.exists():
-        raw = df_path.read_text()
-        lines = [
-            l
-            for l in raw.splitlines()
-            if l.strip()
-            and not l.strip().startswith("#")
-            and "___" not in l
-            and "\\__" not in l
-            and "|/" not in l
-            and "/\\" not in l
-            and "( (" not in l
-            and ") )" not in l
-            and "|  " not in l
-        ]
-        if lines:
-            parts.append(f"\nDockerfile:\n" + "\n".join(lines))
-
-    # Setup script
-    for sp in ["setup.py", "setup.sh"]:
-        sp_path = td / sp
-        if sp_path.exists():
-            parts.append(
-                f"\nSetup script (runs before agent starts):\n{sp_path.read_text()[:1000]}"
-            )
-            break
-
-    parts.append(f"\nTask instruction:\n{instruction}")
-    return "\n".join(parts)
+    return f"Task name: {task_name}\n\nTask instruction:\n{instruction}"
 
 
 # ---------------------------------------------------------------------------
