@@ -1,0 +1,194 @@
+{
+    "id": "plan-sonnet-accurate",
+    "description": "Plan-then-build (CC 2.1.109, sonnet-4.6): accurate 5-of-N selection per task, minimizing |subset_rate - full_rate|",
+    "started_at": "2026-04-15T19:57:36",
+    "finished_at": "2026-04-16T00:17:24",
+    "n_total_trials": 60,
+    "stats": {
+        "n_trials": 60,
+        "n_errors": 0,
+        "evals": {
+            "claude-code-plan__claude-sonnet-4-6__terminal-bench": {
+                "n_trials": 60,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "mean": 0.4666666666666667
+                    }
+                ],
+                "reward_stats": {
+                    "reward": {
+                        "1.0": [
+                            "compile-compcert__BzNzSRe",
+                            "extract-elf__qAzcueL",
+                            "extract-elf__BF4E4Nx",
+                            "extract-elf__D3mngsw",
+                            "extract-elf__T7QJkDy",
+                            "git-leak-recovery__vosnhoF",
+                            "git-leak-recovery__QMfWU7W",
+                            "git-leak-recovery__S8NkjWG",
+                            "git-leak-recovery__cDCHCVu",
+                            "git-leak-recovery__dDxWkC3",
+                            "multi-source-data-merger__wNTCmAT",
+                            "multi-source-data-merger__4ZHhmxi",
+                            "multi-source-data-merger__CGP5XRb",
+                            "multi-source-data-merger__NvX3meC",
+                            "rstan-to-pystan__QhmMSqB",
+                            "rstan-to-pystan__CyxPrfy",
+                            "rstan-to-pystan__ZWdNXcs",
+                            "rstan-to-pystan__gDe4e5X",
+                            "sanitize-git-repo__Q7v3hML",
+                            "sanitize-git-repo__t5BQcrf",
+                            "sparql-university__3DcTd52",
+                            "sparql-university__p22uSev",
+                            "sparql-university__7N7s3T7",
+                            "sparql-university__HMkoRYa",
+                            "sparql-university__t3B6rcB",
+                            "sqlite-db-truncate__78T2pK4",
+                            "sqlite-db-truncate__BZLqUQn",
+                            "sqlite-db-truncate__VyTavt3"
+                        ],
+                        "0.0": [
+                            "chess-best-move__4EFPRCt",
+                            "chess-best-move__u8qXxJA",
+                            "chess-best-move__HdLknhW",
+                            "chess-best-move__JzJLKGW",
+                            "chess-best-move__PuTj72w",
+                            "circuit-fibsqrt__H76HQVd",
+                            "circuit-fibsqrt__RmupNsw",
+                            "circuit-fibsqrt__8tBgMGi",
+                            "circuit-fibsqrt__AToZJv4",
+                            "circuit-fibsqrt__RKqaqZn",
+                            "compile-compcert__4zYWBYR",
+                            "compile-compcert__DQ4XtVW",
+                            "compile-compcert__EW9n4Du",
+                            "compile-compcert__SZccpKZ",
+                            "extract-elf__pitSAr5",
+                            "multi-source-data-merger__ewKfdKr",
+                            "path-tracing__Gq34tcc",
+                            "path-tracing__Kn6K2Dr",
+                            "path-tracing__8mHCQ2W",
+                            "path-tracing__CRREFBB",
+                            "path-tracing__e9gGFzQ",
+                            "rstan-to-pystan__Vau4e8Q",
+                            "sanitize-git-repo__dRaWvw2",
+                            "sanitize-git-repo__2HfDMaX",
+                            "sanitize-git-repo__ajPuH4J",
+                            "sqlite-db-truncate__GDQwy6v",
+                            "sqlite-db-truncate__gJp4mLq",
+                            "torch-tensor-parallelism__PdVvWCC",
+                            "torch-tensor-parallelism__bMUjEQm",
+                            "torch-tensor-parallelism__6C7NJgb",
+                            "torch-tensor-parallelism__Z5fmXQu",
+                            "torch-tensor-parallelism__ivgkoph"
+                        ]
+                    }
+                },
+                "per_task": {
+                    "chess-best-move": {
+                        "pass": 0,
+                        "fail": 5
+                    },
+                    "circuit-fibsqrt": {
+                        "pass": 0,
+                        "fail": 5
+                    },
+                    "compile-compcert": {
+                        "pass": 1,
+                        "fail": 4
+                    },
+                    "extract-elf": {
+                        "pass": 4,
+                        "fail": 1
+                    },
+                    "git-leak-recovery": {
+                        "pass": 5,
+                        "fail": 0
+                    },
+                    "multi-source-data-merger": {
+                        "pass": 4,
+                        "fail": 1
+                    },
+                    "path-tracing": {
+                        "pass": 0,
+                        "fail": 5
+                    },
+                    "rstan-to-pystan": {
+                        "pass": 4,
+                        "fail": 1
+                    },
+                    "sanitize-git-repo": {
+                        "pass": 2,
+                        "fail": 3
+                    },
+                    "sparql-university": {
+                        "pass": 5,
+                        "fail": 0
+                    },
+                    "sqlite-db-truncate": {
+                        "pass": 3,
+                        "fail": 2
+                    },
+                    "torch-tensor-parallelism": {
+                        "pass": 0,
+                        "fail": 5
+                    }
+                },
+                "selection_method": {
+                    "method": "accurate",
+                    "description": "For tasks with >5 non-infra runs, select 5 that minimize |subset_rate - full_rate|. For tasks with exactly 5, use all.",
+                    "full_results": {
+                        "chess-best-move": {
+                            "n": 7,
+                            "pass": 0
+                        },
+                        "circuit-fibsqrt": {
+                            "n": 7,
+                            "pass": 0
+                        },
+                        "compile-compcert": {
+                            "n": 5,
+                            "pass": 1
+                        },
+                        "extract-elf": {
+                            "n": 5,
+                            "pass": 4
+                        },
+                        "git-leak-recovery": {
+                            "n": 5,
+                            "pass": 5
+                        },
+                        "multi-source-data-merger": {
+                            "n": 5,
+                            "pass": 4
+                        },
+                        "path-tracing": {
+                            "n": 7,
+                            "pass": 0
+                        },
+                        "rstan-to-pystan": {
+                            "n": 6,
+                            "pass": 5
+                        },
+                        "sanitize-git-repo": {
+                            "n": 5,
+                            "pass": 2
+                        },
+                        "sparql-university": {
+                            "n": 5,
+                            "pass": 5
+                        },
+                        "sqlite-db-truncate": {
+                            "n": 6,
+                            "pass": 3
+                        },
+                        "torch-tensor-parallelism": {
+                            "n": 5,
+                            "pass": 0
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
